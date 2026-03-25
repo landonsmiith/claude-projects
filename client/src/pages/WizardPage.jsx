@@ -17,8 +17,8 @@ export function WizardPage() {
     updateWizardData,
     updateDay,
     updateDays,
-    updateBookedFlight,
-    updateBookedHotel,
+    updateFlightLegs,
+    updateHotelStays,
     completeWizard,
     currentTrip,
     isDarkMode,
@@ -76,8 +76,8 @@ export function WizardPage() {
       {wizardStep === 2 && (
         <Step3Booked
           data={wizardData}
-          onUpdateFlight={updateBookedFlight}
-          onUpdateHotel={updateBookedHotel}
+          onUpdateFlightLegs={updateFlightLegs}
+          onUpdateHotelStays={updateHotelStays}
           onBack={handleBack}
           onNext={handleNext}
         />

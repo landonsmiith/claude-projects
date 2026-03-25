@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Heart, Utensils, Activity, DollarSign } from 'lucide-react';
+import { Heart, Utensils, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
 const INTERESTS = [
@@ -146,31 +145,6 @@ export function Step4Preferences({ data, onChange, onBack, onComplete }) {
               value={data.mobilityConsiderations || ''}
               onChange={(e) => onChange({ mobilityConsiderations: e.target.value })}
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Affiliate mode */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <DollarSign className="h-5 w-5 text-forge-500" />
-            Affiliate links
-          </CardTitle>
-          <CardDescription>
-            When ON, booking links include your affiliate IDs so you earn commission.
-            Turn OFF to share clean links with others.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={data.affiliateMode !== false}
-              onCheckedChange={(v) => onChange({ affiliateMode: v })}
-            />
-            <span className="text-sm font-medium">
-              {data.affiliateMode !== false ? '✅ Affiliate mode ON (personal use)' : '🔗 Affiliate mode OFF (sharing)'}
-            </span>
           </div>
         </CardContent>
       </Card>

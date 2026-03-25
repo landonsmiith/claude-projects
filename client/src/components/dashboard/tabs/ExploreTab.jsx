@@ -165,7 +165,7 @@ export function ExploreTab({ day, trip }) {
       <div>
         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Claude is thinking about {day.location}...</span>
+          <span>Finding things to do in {day.location}...</span>
         </div>
         <SkeletonActivities />
       </div>

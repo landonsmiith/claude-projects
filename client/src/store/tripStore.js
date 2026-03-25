@@ -14,17 +14,16 @@ const initialWizardData = {
   budgetTier: 'mid-range',
 
   // Step 2
-  days: [], // { index, date, label, dayNumber, location, locationTier, travelTypes }
+  days: [], // { index, date, label, dayNumber, location, locationTier, travelTypes, isTravelDay }
 
   // Step 3
-  bookedFlights: {}, // dayIndex -> { airline, flightNumber, times, isBooked }
-  bookedHotels: {},  // dayIndex -> { name, dates, confirmation, isBooked }
+  flightLegs: [],  // [{ id, origin, dest, date, airline, flightNumber, isBooked }]
+  hotelStays: [],  // [{ id, name, location, checkin, checkout, confirmation, isBooked }]
 
   // Step 4
   dietaryRestrictions: [],
   mobilityConsiderations: '',
   interests: [],
-  affiliateMode: true,
 };
 
 export const useTripStore = create(
@@ -65,6 +64,7 @@ export const useTripStore = create(
               location: '',
               locationTier: 'city', // 'country' | 'region' | 'city'
               travelTypes: [],
+              isTravelDay: false,
             };
           });
 
@@ -78,26 +78,14 @@ export const useTripStore = create(
           return { wizardData: { ...state.wizardData, days } };
         }),
 
-      updateBookedFlight: (dayIndex, data) =>
+      updateFlightLegs: (legs) =>
         set((state) => ({
-          wizardData: {
-            ...state.wizardData,
-            bookedFlights: {
-              ...state.wizardData.bookedFlights,
-              [dayIndex]: { ...state.wizardData.bookedFlights[dayIndex], ...data },
-            },
-          },
+          wizardData: { ...state.wizardData, flightLegs: legs },
         })),
 
-      updateBookedHotel: (dayIndex, data) =>
+      updateHotelStays: (stays) =>
         set((state) => ({
-          wizardData: {
-            ...state.wizardData,
-            bookedHotels: {
-              ...state.wizardData.bookedHotels,
-              [dayIndex]: { ...state.wizardData.bookedHotels[dayIndex], ...data },
-            },
-          },
+          wizardData: { ...state.wizardData, hotelStays: stays },
         })),
 
       completeWizard: () =>

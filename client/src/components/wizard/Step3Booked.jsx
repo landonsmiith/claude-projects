@@ -1,138 +1,227 @@
-import { Plane, Hotel, CheckCircle2, Circle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect } from 'react';
+import { Plane, Hotel, CheckCircle2, Circle, PlusCircle, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
-function FlightCard({ day, nextDay, booked, onUpdate }) {
-  const isBooked = booked?.isBooked || false;
-
-  return (
-    <Card className={cn('transition-all', isBooked && 'opacity-75')}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Plane className="h-4 w-4 text-blue-500" />
-            <span>
-              {day.location || `Day ${day.dayNumber}`}
-              {nextDay && ` → ${nextDay.location || `Day ${nextDay.dayNumber}`}`}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Already booked</span>
-            <Switch
-              checked={isBooked}
-              onCheckedChange={(v) => onUpdate({ isBooked: v })}
-            />
-            {isBooked ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            ) : (
-              <Circle className="h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">{day.label}</p>
-      </CardHeader>
-      {isBooked && (
-        <CardContent className="grid gap-3 sm:grid-cols-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Airline</Label>
-            <Input
-              placeholder="e.g. Ryanair"
-              value={booked?.airline || ''}
-              onChange={(e) => onUpdate({ airline: e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Flight number</Label>
-            <Input
-              placeholder="e.g. FR1234"
-              value={booked?.flightNumber || ''}
-              onChange={(e) => onUpdate({ flightNumber: e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Departure time</Label>
-            <Input
-              type="time"
-              value={booked?.time || ''}
-              onChange={(e) => onUpdate({ time: e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-        </CardContent>
-      )}
-    </Card>
-  );
+function emptyLeg() {
+  return {
+    id: crypto.randomUUID(),
+    origin: '',
+    dest: '',
+    date: '',
+    airline: '',
+    flightNumber: '',
+    isBooked: false,
+  };
 }
 
-function HotelCard({ day, booked, onUpdate }) {
-  const isBooked = booked?.isBooked || false;
+function emptyStay() {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    location: '',
+    checkin: '',
+    checkout: '',
+    confirmation: '',
+    isBooked: false,
+  };
+}
 
+function LegCard({ leg, onChange, onRemove }) {
   return (
-    <Card className={cn('transition-all', isBooked && 'opacity-75')}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Hotel className="h-4 w-4 text-purple-500" />
-            <span>Staying in {day.location || `Day ${day.dayNumber}`}</span>
-          </div>
+    <Card className={cn('transition-all', leg.isBooked && 'opacity-75')}>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Already booked</span>
             <Switch
-              checked={isBooked}
-              onCheckedChange={(v) => onUpdate({ isBooked: v })}
+              checked={leg.isBooked}
+              onCheckedChange={(v) => onChange({ isBooked: v })}
             />
-            {isBooked ? (
+            {leg.isBooked ? (
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             ) : (
               <Circle className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">{day.label}</p>
-      </CardHeader>
-      {isBooked && (
-        <CardContent className="grid gap-3 sm:grid-cols-3">
+          <button
+            onClick={onRemove}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <X className="h-3.5 w-3.5" /> Remove
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-1">
-            <Label className="text-xs">Property name</Label>
+            <Label className="text-xs">From</Label>
             <Input
-              placeholder="e.g. Hotel Acropolis"
-              value={booked?.name || ''}
-              onChange={(e) => onUpdate({ name: e.target.value })}
+              placeholder="e.g. London"
+              value={leg.origin}
+              onChange={(e) => onChange({ origin: e.target.value })}
               className="h-8 text-xs"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Check-in date</Label>
+            <Label className="text-xs">To</Label>
+            <Input
+              placeholder="e.g. Barcelona"
+              value={leg.dest}
+              onChange={(e) => onChange({ dest: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Date</Label>
             <Input
               type="date"
-              value={booked?.checkin || day.date}
-              onChange={(e) => onUpdate({ checkin: e.target.value })}
+              value={leg.date}
+              onChange={(e) => onChange({ date: e.target.value })}
               className="h-8 text-xs"
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Confirmation #</Label>
+            <Label className="text-xs">Airline (optional)</Label>
             <Input
-              placeholder="Optional"
-              value={booked?.confirmation || ''}
-              onChange={(e) => onUpdate({ confirmation: e.target.value })}
+              placeholder="e.g. Ryanair"
+              value={leg.airline}
+              onChange={(e) => onChange({ airline: e.target.value })}
               className="h-8 text-xs"
             />
           </div>
-        </CardContent>
-      )}
+          <div className="space-y-1">
+            <Label className="text-xs">Flight number (optional)</Label>
+            <Input
+              placeholder="e.g. FR1234"
+              value={leg.flightNumber}
+              onChange={(e) => onChange({ flightNumber: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }
 
-export function Step3Booked({ data, onUpdateFlight, onUpdateHotel, onBack, onNext }) {
-  const days = data.days || [];
+function StayCard({ stay, onChange, onRemove }) {
+  const nights =
+    stay.checkin && stay.checkout
+      ? Math.round((new Date(stay.checkout) - new Date(stay.checkin)) / (1000 * 60 * 60 * 24))
+      : null;
+
+  return (
+    <Card className={cn('transition-all', stay.isBooked && 'opacity-75')}>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Already booked</span>
+            <Switch
+              checked={stay.isBooked}
+              onCheckedChange={(v) => onChange({ isBooked: v })}
+            />
+            {stay.isBooked ? (
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            ) : (
+              <Circle className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+          <button
+            onClick={onRemove}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <X className="h-3.5 w-3.5" /> Remove
+          </button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-1">
+            <Label className="text-xs">City / Location</Label>
+            <Input
+              placeholder="e.g. Barcelona"
+              value={stay.location}
+              onChange={(e) => onChange({ location: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Property name (optional)</Label>
+            <Input
+              placeholder="e.g. Hotel Acropolis"
+              value={stay.name}
+              onChange={(e) => onChange({ name: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Check-in</Label>
+            <Input
+              type="date"
+              value={stay.checkin}
+              onChange={(e) => onChange({ checkin: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">
+              Check-out
+              {nights !== null && nights > 0 && (
+                <span className="ml-2 font-normal text-muted-foreground">
+                  ({nights} night{nights !== 1 ? 's' : ''})
+                </span>
+              )}
+            </Label>
+            <Input
+              type="date"
+              value={stay.checkout}
+              onChange={(e) => onChange({ checkout: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Confirmation # (optional)</Label>
+            <Input
+              placeholder="Optional"
+              value={stay.confirmation}
+              onChange={(e) => onChange({ confirmation: e.target.value })}
+              className="h-8 text-xs"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function Step3Booked({ data, onUpdateFlightLegs, onUpdateHotelStays, onBack, onNext }) {
+  const flightLegs = data.flightLegs || [];
+  const hotelStays = data.hotelStays || [];
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (flightLegs.length === 0) onUpdateFlightLegs([emptyLeg()]);
+    if (hotelStays.length === 0) onUpdateHotelStays([emptyStay()]);
+  }, []);
+
+  const updateLeg = (id, updates) =>
+    onUpdateFlightLegs(flightLegs.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+
+  const removeLeg = (id) =>
+    onUpdateFlightLegs(flightLegs.filter((l) => l.id !== id));
+
+  const addLeg = () =>
+    onUpdateFlightLegs([...flightLegs, emptyLeg()]);
+
+  const updateStay = (id, updates) =>
+    onUpdateHotelStays(hotelStays.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+
+  const removeStay = (id) =>
+    onUpdateHotelStays(hotelStays.filter((s) => s.id !== id));
+
+  const addStay = () =>
+    onUpdateHotelStays([...hotelStays, emptyStay()]);
 
   return (
     <div className="space-y-6 py-6">
@@ -143,50 +232,51 @@ export function Step3Booked({ data, onUpdateFlight, onUpdateHotel, onBack, onNex
         </p>
       </div>
 
-      {days.length === 0 ? (
-        <Card className="p-8 text-center">
-          <p className="text-muted-foreground">No days planned yet — go back to Step 1.</p>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {/* Flights section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Plane className="h-5 w-5 text-blue-500" />
-              Flights & transfers
-            </h2>
-            <div className="space-y-2">
-              {days.map((day, i) => (
-                <FlightCard
-                  key={`flight-${day.index}`}
-                  day={day}
-                  nextDay={days[i + 1]}
-                  booked={data.bookedFlights[day.index]}
-                  onUpdate={(updates) => onUpdateFlight(day.index, updates)}
-                />
-              ))}
-            </div>
+      <div className="space-y-6">
+        {/* Flights section */}
+        <div>
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Plane className="h-5 w-5 text-blue-500" />
+            Flights & transfers
+          </h2>
+          <div className="space-y-2">
+            {flightLegs.map((leg) => (
+              <LegCard
+                key={leg.id}
+                leg={leg}
+                onChange={(updates) => updateLeg(leg.id, updates)}
+                onRemove={() => removeLeg(leg.id)}
+              />
+            ))}
           </div>
-
-          {/* Hotels section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Hotel className="h-5 w-5 text-purple-500" />
-              Hotels & accommodation
-            </h2>
-            <div className="space-y-2">
-              {days.map((day) => (
-                <HotelCard
-                  key={`hotel-${day.index}`}
-                  day={day}
-                  booked={data.bookedHotels[day.index]}
-                  onUpdate={(updates) => onUpdateHotel(day.index, updates)}
-                />
-              ))}
-            </div>
-          </div>
+          <Button variant="outline" size="sm" onClick={addLeg} className="mt-2 gap-1.5">
+            <PlusCircle className="h-4 w-4" />
+            Add flight leg
+          </Button>
         </div>
-      )}
+
+        {/* Hotels section */}
+        <div>
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Hotel className="h-5 w-5 text-purple-500" />
+            Hotels & accommodation
+          </h2>
+          <div className="space-y-2">
+            {hotelStays.map((stay) => (
+              <StayCard
+                key={stay.id}
+                stay={stay}
+                onChange={(updates) => updateStay(stay.id, updates)}
+                onRemove={() => removeStay(stay.id)}
+              />
+            ))}
+          </div>
+          <Button variant="outline" size="sm" onClick={addStay} className="mt-2 gap-1.5">
+            <PlusCircle className="h-4 w-4" />
+            Add hotel stay
+          </Button>
+        </div>
+      </div>
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>← Back</Button>

@@ -1,9 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { Cloud, Sun, CloudRain, Snowflake, CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTripStore } from '@/store/tripStore';
-import { api } from '@/lib/api';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const TRAVEL_TYPE_ICONS = {
   explorer: '🧭',
@@ -13,38 +10,11 @@ const TRAVEL_TYPE_ICONS = {
   culture: '🏛️',
 };
 
-function WeatherIcon({ icon, className }) {
-  if (!icon) return <Sun className={cn('h-4 w-4 text-yellow-500', className)} />;
-  if (icon.startsWith('01') || icon.startsWith('02')) return <Sun className={cn('h-4 w-4 text-yellow-500', className)} />;
-  if (icon.startsWith('09') || icon.startsWith('10')) return <CloudRain className={cn('h-4 w-4 text-blue-400', className)} />;
-  if (icon.startsWith('13')) return <Snowflake className={cn('h-4 w-4 text-blue-200', className)} />;
-  return <Cloud className={cn('h-4 w-4 text-gray-400', className)} />;
-}
-
-function DayWeather({ location, date }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ['weather', location, date],
-    queryFn: () => api.getWeather({ location, date }),
-    enabled: !!location && !!date,
-    staleTime: 1000 * 60 * 30, // 30 min
-  });
-
-  if (isLoading) return <Skeleton className="h-4 w-16" />;
-  if (!data) return null;
-
-  return (
-    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-      <WeatherIcon icon={data.icon} />
-      <span>{data.temp}°C</span>
-    </div>
-  );
-}
-
 export function Sidebar({ onDayClick }) {
   const { currentTrip, activeDayIndex, setActiveDayIndex, savedActivities } = useTripStore();
   const days = currentTrip?.days || [];
-  const bookedFlights = currentTrip?.bookedFlights || {};
-  const bookedHotels = currentTrip?.bookedHotels || {};
+  const flightLegs = currentTrip?.flightLegs || [];
+  const hotelStays = currentTrip?.hotelStays || [];
 
   const scrollToDay = (idx) => {
     setActiveDayIndex(idx);
@@ -69,8 +39,12 @@ export function Sidebar({ onDayClick }) {
 
       {days.map((day, i) => {
         const isActive = i === activeDayIndex;
-        const flightBooked = bookedFlights[i]?.isBooked;
-        const hotelBooked = bookedHotels[i]?.isBooked;
+        const flightBooked = flightLegs.some(
+          (leg) => leg.isBooked && leg.date === day.date
+        );
+        const hotelBooked = hotelStays.some(
+          (stay) => stay.isBooked && stay.checkin <= day.date && stay.checkout >= day.date
+        );
         const activitiesCount = (savedActivities[i] || []).length;
 
         return (
@@ -96,21 +70,19 @@ export function Sidebar({ onDayClick }) {
                   <span className="text-xs text-muted-foreground truncate">{day.label}</span>
                 </div>
                 <div className="text-sm font-medium truncate mt-0.5">
-                  {day.location || <span className="text-muted-foreground italic">No location set</span>}
+                  {day.isTravelDay
+                    ? <span className="text-blue-500 italic">✈️ In transit</span>
+                    : day.location || <span className="text-muted-foreground italic">No location set</span>
+                  }
                 </div>
               </div>
-
-              {/* Weather */}
-              {day.location && (
-                <DayWeather location={day.location} date={day.date} />
-              )}
             </div>
 
             {/* Travel type badges */}
             {(day.travelTypes || []).length > 0 && (
               <div className="flex gap-1 mt-1">
                 {day.travelTypes.map((t) => (
-                  <span key={t} className="text-xs" title={t}>
+                  <span key={t} className="text-sm" title={t}>
                     {TRAVEL_TYPE_ICONS[t]}
                   </span>
                 ))}

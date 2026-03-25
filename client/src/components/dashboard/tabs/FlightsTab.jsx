@@ -1,22 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink, CheckCircle2, Plane, Train, Bus } from 'lucide-react';
+import { ExternalLink, CheckCircle2, Plane } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { buildSkyscannerLink, buildTrainlineLink, buildFlixbusLink } from '@/lib/affiliates';
 import { api } from '@/lib/api';
 import { useTripStore } from '@/store/tripStore';
 
-const MOCK_FLIGHT_OPTIONS = [
-  { provider: 'Ryanair', price: '€49', duration: '2h 15m', logo: '✈️', type: 'flight' },
-  { provider: 'EasyJet', price: '€72', duration: '2h 30m', logo: '✈️', type: 'flight' },
-  { provider: 'Wizz Air', price: '€38', duration: '2h 05m', logo: '✈️', type: 'flight' },
+const FLIGHT_OPTIONS = [
+  { provider: 'Ryanair', logo: '✈️', type: 'flight' },
+  { provider: 'EasyJet', logo: '✈️', type: 'flight' },
+  { provider: 'Wizz Air', logo: '✈️', type: 'flight' },
 ];
 
-const MOCK_GROUND_OPTIONS = [
-  { provider: 'Trainline', price: '€24', duration: '3h 40m', logo: '🚂', type: 'train' },
-  { provider: 'FlixBus', price: '€12', duration: '4h 55m', logo: '🚌', type: 'bus' },
+const GROUND_OPTIONS = [
+  { provider: 'Trainline', logo: '🚂', type: 'train' },
+  { provider: 'FlixBus', logo: '🚌', type: 'bus' },
 ];
 
 function TransportCard({ option, day, nextDay, trip }) {
@@ -39,16 +38,12 @@ function TransportCard({ option, day, nextDay, trip }) {
         <div className="flex-1">
           <div className="font-semibold text-sm">{option.provider}</div>
           <div className="text-xs text-muted-foreground">
-            {origin} → {dest} · {option.duration}
+            {origin} → {dest}
           </div>
-        </div>
-        <div className="text-right">
-          <div className="font-bold text-lg">{option.price}</div>
-          <div className="text-xs text-muted-foreground">per person</div>
         </div>
         <Button asChild size="sm" variant="forge" className="gap-1.5">
           <a href={bookLink} target="_blank" rel="noopener noreferrer">
-            Book <ExternalLink className="h-3.5 w-3.5" />
+            Search fares <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </Button>
       </CardContent>
@@ -58,7 +53,9 @@ function TransportCard({ option, day, nextDay, trip }) {
 
 export function FlightsTab({ day, trip }) {
   const { currentTrip } = useTripStore();
-  const bookedFlight = currentTrip?.bookedFlights?.[day.index];
+  const bookedFlight = (currentTrip?.flightLegs || []).find(
+    (leg) => leg.isBooked && leg.date === day.date
+  );
   const days = currentTrip?.days || [];
   const nextDay = days[day.index + 1];
 
@@ -72,14 +69,16 @@ export function FlightsTab({ day, trip }) {
     staleTime: 1000 * 60 * 60,
   });
 
-  if (bookedFlight?.isBooked) {
+  if (bookedFlight) {
     return (
       <div className="text-center py-8">
         <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
         <p className="font-semibold text-lg">Flight already booked!</p>
         <div className="mt-3 text-sm text-muted-foreground space-y-1">
           {bookedFlight.airline && <p>✈️ {bookedFlight.airline} {bookedFlight.flightNumber}</p>}
-          {bookedFlight.time && <p>🕐 Departure: {bookedFlight.time}</p>}
+          {bookedFlight.origin && bookedFlight.dest && (
+            <p>{bookedFlight.origin} → {bookedFlight.dest}</p>
+          )}
         </div>
       </div>
     );
@@ -112,12 +111,11 @@ export function FlightsTab({ day, trip }) {
         </div>
       )}
 
-      {/* Ground options first if short distance */}
       {isGroundFirst && (
         <div>
           <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Ground Transport</h3>
           <div className="space-y-2">
-            {MOCK_GROUND_OPTIONS.map((opt) => (
+            {GROUND_OPTIONS.map((opt) => (
               <TransportCard key={opt.provider} option={opt} day={day} nextDay={nextDay} trip={trip} />
             ))}
           </div>
@@ -127,7 +125,7 @@ export function FlightsTab({ day, trip }) {
       <div>
         <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Flights</h3>
         <div className="space-y-2">
-          {MOCK_FLIGHT_OPTIONS.map((opt) => (
+          {FLIGHT_OPTIONS.map((opt) => (
             <TransportCard key={opt.provider} option={opt} day={day} nextDay={nextDay} trip={trip} />
           ))}
         </div>
@@ -137,7 +135,7 @@ export function FlightsTab({ day, trip }) {
         <div>
           <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Ground Alternatives</h3>
           <div className="space-y-2">
-            {MOCK_GROUND_OPTIONS.map((opt) => (
+            {GROUND_OPTIONS.map((opt) => (
               <TransportCard key={opt.provider} option={opt} day={day} nextDay={nextDay} trip={trip} />
             ))}
           </div>
@@ -145,7 +143,7 @@ export function FlightsTab({ day, trip }) {
       )}
 
       <p className="text-xs text-muted-foreground">
-        * Prices are illustrative. Click Book to see live fares from provider.
+        Click any provider to search live fares
       </p>
     </div>
   );
