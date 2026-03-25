@@ -41,6 +41,9 @@ export const useTripStore = create(
 
       // Saved recommendations per day
       savedActivities: {}, // dayIndex -> activity[]
+      savedEvents: {}, // dayIndex -> event[]
+      activityTimeSlots: {}, // `${dayIndex}-${activityName}` -> 'Morning'|'Afternoon'|'Evening'
+      activityNotes: {}, // `${dayIndex}-${activityName}` -> string
 
       // ── Wizard actions ──────────────────────────────────────────
       setWizardStep: (step) => set({ wizardStep: step }),
@@ -98,6 +101,26 @@ export const useTripStore = create(
           return { currentTrip: trip, wizardStep: -1 };
         }),
 
+      // Update trip basics (dates, origin, travelers, budget) and regenerate days
+      updateCurrentTripBasics: (updates) =>
+        set((state) => {
+          if (!state.currentTrip) return {};
+          const merged = { ...state.currentTrip, ...updates };
+          // Regenerate days if dates changed
+          if (updates.departureDate || updates.returnDate) {
+            const baseDays = generateDays(merged.departureDate, merged.returnDate);
+            const existingDays = state.currentTrip.days || [];
+            const days = baseDays.map((d) => {
+              const existing = existingDays.find((e) => e.date === d.date);
+              return existing
+                ? { ...d, ...existing }
+                : { ...d, location: '', locationTier: 'city', travelTypes: [], isTravelDay: false };
+            });
+            merged.days = days;
+          }
+          return { currentTrip: merged };
+        }),
+
       resetWizard: () =>
         set({ wizardData: { ...initialWizardData }, wizardStep: 0, currentTrip: null }),
 
@@ -135,6 +158,45 @@ export const useTripStore = create(
           },
         })),
 
+      saveEvent: (dayIndex, event) =>
+        set((state) => {
+          const dayEvents = state.savedEvents[dayIndex] || [];
+          const alreadySaved = dayEvents.some((e) => e.title === event.title);
+          if (alreadySaved) return {};
+          return {
+            savedEvents: {
+              ...state.savedEvents,
+              [dayIndex]: [...dayEvents, { ...event, savedAt: new Date().toISOString() }],
+            },
+          };
+        }),
+
+      removeEvent: (dayIndex, eventTitle) =>
+        set((state) => ({
+          savedEvents: {
+            ...state.savedEvents,
+            [dayIndex]: (state.savedEvents[dayIndex] || []).filter(
+              (e) => e.title !== eventTitle
+            ),
+          },
+        })),
+
+      setActivityTimeSlot: (dayIndex, activityName, slot) =>
+        set((state) => ({
+          activityTimeSlots: {
+            ...state.activityTimeSlots,
+            [`${dayIndex}-${activityName}`]: slot,
+          },
+        })),
+
+      setActivityNote: (dayIndex, activityName, note) =>
+        set((state) => ({
+          activityNotes: {
+            ...state.activityNotes,
+            [`${dayIndex}-${activityName}`]: note,
+          },
+        })),
+
       // ── UI actions ───────────────────────────────────────────────
       toggleDarkMode: () =>
         set((state) => {
@@ -153,6 +215,9 @@ export const useTripStore = create(
         wizardData: state.wizardData,
         wizardStep: state.wizardStep,
         savedActivities: state.savedActivities,
+        savedEvents: state.savedEvents,
+        activityTimeSlots: state.activityTimeSlots,
+        activityNotes: state.activityNotes,
         isDarkMode: state.isDarkMode,
       }),
     }

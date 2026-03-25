@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Globe, Map, Navigation, HelpCircle, Loader2 } from 'lucide-react';
+import { Globe, Map, Navigation, HelpCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
+import { LocationAutocomplete } from './LocationAutocomplete.jsx';
 
 const TRAVEL_TYPES = [
   { id: 'explorer', emoji: '🧭', label: 'Explorer' },
@@ -111,21 +111,18 @@ function DayRow({ day, onUpdate, tripContext }) {
 
                 {/* Location input */}
                 <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder={
-                        day.locationTier === 'country'
-                          ? 'e.g. Greece'
-                          : day.locationTier === 'region'
-                          ? 'e.g. Greek Islands'
-                          : 'e.g. Santorini'
-                      }
-                      value={day.location || ''}
-                      onChange={(e) => onUpdate({ location: e.target.value })}
-                      className="pl-9"
-                    />
-                  </div>
+                  <LocationAutocomplete
+                    className="flex-1"
+                    value={day.location || ''}
+                    onChange={(v) => onUpdate({ location: v })}
+                    placeholder={
+                      day.locationTier === 'country'
+                        ? 'e.g. Greece'
+                        : day.locationTier === 'region'
+                        ? 'e.g. Greek Islands'
+                        : 'e.g. Santorini'
+                    }
+                  />
                   {day.locationTier === 'country' && day.location && (
                     <Button
                       variant="outline"

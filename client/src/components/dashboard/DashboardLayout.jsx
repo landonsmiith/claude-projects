@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Moon, Sun, Backpack, Share2 } from 'lucide-react';
+import { Menu, X, Moon, Sun, Backpack, Share2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sidebar } from './Sidebar.jsx';
 import { PackPanel } from './PackPanel.jsx';
+import { EditTripModal } from './EditTripModal.jsx';
+import { DeepResearchPanel } from './DeepResearchPanel.jsx';
 import { useTripStore } from '@/store/tripStore';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 
 export function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [researchOpen, setResearchOpen] = useState(false);
   const { currentTrip, isDarkMode, toggleDarkMode, isPackPanelOpen, togglePackPanel } = useTripStore();
 
   const handleShare = async () => {
@@ -59,6 +63,18 @@ export function DashboardLayout({ children }) {
           )}
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Edit trip button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditModalOpen(true)}
+              className="gap-1.5"
+              title="Edit trip dates & details"
+            >
+              <Pencil className="h-4 w-4" />
+              <span className="hidden sm:inline">Edit trip</span>
+            </Button>
+
             <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5">
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
@@ -84,7 +100,7 @@ export function DashboardLayout({ children }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop sidebar */}
         <aside className="hidden lg:block w-64 border-r overflow-y-auto flex-shrink-0">
-          <Sidebar />
+          <Sidebar onResearchOpen={() => setResearchOpen(true)} />
         </aside>
 
         {/* Mobile sidebar overlay */}
@@ -105,7 +121,10 @@ export function DashboardLayout({ children }) {
                 transition={{ type: 'spring', damping: 25 }}
                 className="fixed left-0 top-14 bottom-0 w-64 border-r bg-background z-50 overflow-y-auto lg:hidden"
               >
-                <Sidebar onDayClick={() => setSidebarOpen(false)} />
+                <Sidebar
+                  onDayClick={() => setSidebarOpen(false)}
+                  onResearchOpen={() => { setSidebarOpen(false); setResearchOpen(true); }}
+                />
               </motion.aside>
             </>
           )}
@@ -131,6 +150,10 @@ export function DashboardLayout({ children }) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Modals */}
+      <EditTripModal open={editModalOpen} onOpenChange={setEditModalOpen} />
+      <DeepResearchPanel open={researchOpen} onOpenChange={setResearchOpen} />
     </div>
   );
 }

@@ -42,6 +42,12 @@ export const api = {
   deleteTrip: (id) => request(`/trips/${id}`, { method: 'DELETE' }),
   shareTrip: (id) => request(`/trips/${id}/share`, { method: 'POST' }),
 
+  // Research
+  deepResearch: (body) => request('/research/deep', { method: 'POST', body }),
+
+  // Geo autocomplete
+  geoAutocomplete: (q) => request(`/geo/autocomplete?q=${encodeURIComponent(q)}`),
+
   // Health
   health: () => request('/health'),
 };

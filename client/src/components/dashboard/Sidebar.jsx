@@ -1,4 +1,5 @@
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTripStore } from '@/store/tripStore';
 
@@ -10,7 +11,7 @@ const TRAVEL_TYPE_ICONS = {
   culture: '🏛️',
 };
 
-export function Sidebar({ onDayClick }) {
+export function Sidebar({ onDayClick, onResearchOpen }) {
   const { currentTrip, activeDayIndex, setActiveDayIndex, savedActivities } = useTripStore();
   const days = currentTrip?.days || [];
   const flightLegs = currentTrip?.flightLegs || [];
@@ -32,88 +33,106 @@ export function Sidebar({ onDayClick }) {
   }
 
   return (
-    <div className="p-4 space-y-1">
+    <div className="p-4 flex flex-col h-full">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 px-1">
         Trip Timeline
       </div>
 
-      {days.map((day, i) => {
-        const isActive = i === activeDayIndex;
-        const flightBooked = flightLegs.some(
-          (leg) => leg.isBooked && leg.date === day.date
-        );
-        const hotelBooked = hotelStays.some(
-          (stay) => stay.isBooked && stay.checkin <= day.date && stay.checkout >= day.date
-        );
-        const activitiesCount = (savedActivities[i] || []).length;
+      <div className="flex-1 space-y-1 overflow-y-auto">
+        {days.map((day, i) => {
+          const isActive = i === activeDayIndex;
+          const flightBooked = flightLegs.some(
+            (leg) => leg.isBooked && leg.date === day.date
+          );
+          const hotelBooked = hotelStays.some(
+            (stay) => stay.isBooked && stay.checkin <= day.date && stay.checkout >= day.date
+          );
+          const activitiesCount = (savedActivities[i] || []).length;
 
-        return (
-          <button
-            key={day.date}
-            onClick={() => scrollToDay(i)}
-            className={cn(
-              'w-full text-left px-3 py-2.5 rounded-lg transition-all group',
-              isActive
-                ? 'bg-forge-100 dark:bg-forge-950/30 text-forge-700 dark:text-forge-300'
-                : 'hover:bg-muted text-foreground'
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn(
-                    'text-xs font-bold',
-                    isActive ? 'text-forge-600' : 'text-muted-foreground'
-                  )}>
-                    Day {day.dayNumber}
-                  </span>
-                  <span className="text-xs text-muted-foreground truncate">{day.label}</span>
-                </div>
-                <div className="text-sm font-medium truncate mt-0.5">
-                  {day.isTravelDay
-                    ? <span className="text-blue-500 italic">✈️ In transit</span>
-                    : day.location || <span className="text-muted-foreground italic">No location set</span>
-                  }
-                </div>
-              </div>
-            </div>
-
-            {/* Travel type badges */}
-            {(day.travelTypes || []).length > 0 && (
-              <div className="flex gap-1 mt-1">
-                {day.travelTypes.map((t) => (
-                  <span key={t} className="text-sm" title={t}>
-                    {TRAVEL_TYPE_ICONS[t]}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Progress indicators */}
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className={cn(
-                'flex items-center gap-0.5 text-xs',
-                flightBooked ? 'text-green-500' : 'text-muted-foreground'
-              )} title={flightBooked ? 'Flight booked' : 'Flight needed'}>
-                ✈️
-                {flightBooked ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
-              </span>
-              <span className={cn(
-                'flex items-center gap-0.5 text-xs',
-                hotelBooked ? 'text-green-500' : 'text-muted-foreground'
-              )} title={hotelBooked ? 'Hotel booked' : 'Hotel needed'}>
-                🏨
-                {hotelBooked ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
-              </span>
-              {activitiesCount > 0 && (
-                <span className="text-xs text-forge-500 ml-auto">
-                  {activitiesCount} saved
-                </span>
+          return (
+            <button
+              key={day.date}
+              onClick={() => scrollToDay(i)}
+              className={cn(
+                'w-full text-left px-3 py-2.5 rounded-lg transition-all group',
+                isActive
+                  ? 'bg-forge-100 dark:bg-forge-950/30 text-forge-700 dark:text-forge-300'
+                  : 'hover:bg-muted text-foreground'
               )}
-            </div>
-          </button>
-        );
-      })}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn(
+                      'text-xs font-bold',
+                      isActive ? 'text-forge-600' : 'text-muted-foreground'
+                    )}>
+                      Day {day.dayNumber}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate">{day.label}</span>
+                  </div>
+                  <div className="text-sm font-medium truncate mt-0.5">
+                    {day.isTravelDay
+                      ? <span className="text-blue-500 italic">✈️ In transit</span>
+                      : day.location || <span className="text-muted-foreground italic">No location set</span>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Travel type badges */}
+              {(day.travelTypes || []).length > 0 && (
+                <div className="flex gap-1 mt-1">
+                  {day.travelTypes.map((t) => (
+                    <span key={t} className="text-sm" title={t}>
+                      {TRAVEL_TYPE_ICONS[t]}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Progress indicators */}
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className={cn(
+                  'flex items-center gap-0.5 text-xs',
+                  flightBooked ? 'text-green-500' : 'text-muted-foreground'
+                )} title={flightBooked ? 'Flight booked' : 'Flight needed'}>
+                  ✈️
+                  {flightBooked ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                </span>
+                <span className={cn(
+                  'flex items-center gap-0.5 text-xs',
+                  hotelBooked ? 'text-green-500' : 'text-muted-foreground'
+                )} title={hotelBooked ? 'Hotel booked' : 'Hotel needed'}>
+                  🏨
+                  {hotelBooked ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
+                </span>
+                {activitiesCount > 0 && (
+                  <span className="text-xs text-forge-500 ml-auto">
+                    {activitiesCount} saved
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Deep Research button */}
+      <div className="pt-3 mt-3 border-t flex-shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-2 text-forge-600 dark:text-forge-400 border-forge-200 dark:border-forge-800 hover:bg-forge-50 dark:hover:bg-forge-950/20"
+          onClick={onResearchOpen}
+        >
+          <Sparkles className="h-4 w-4" />
+          Deep Research
+        </Button>
+        <p className="text-xs text-muted-foreground text-center mt-1.5 px-1">
+          AI-powered research for any aspect of your trip
+        </p>
+      </div>
     </div>
   );
 }

@@ -105,6 +105,38 @@ Respond ONLY with valid JSON.`;
 }
 
 /**
+ * Deep research: free-form AI research anchored to trip context
+ */
+export async function deepResearch({ query, location, date, tripContext }) {
+  const ctx = tripContext || {};
+  const prompt = `You are a knowledgeable travel research expert helping someone plan their trip to ${location}${date ? ` on/around ${date}` : ''}.
+
+Trip context:
+- Travelers: ${ctx.travelers || 1}
+- Budget tier: ${ctx.budgetTier || 'mid-range'}
+- Travel style: ${(ctx.travelTypes || []).join(', ') || 'general'}
+- Interests: ${(ctx.interests || []).join(', ') || 'general sightseeing'}
+
+User's research question: ${query}
+
+Provide a thorough, specific, actionable response. Include:
+- Concrete names, places, venues with brief explanations of why they're recommended
+- Practical insider tips (best time, how to book, what to avoid)
+- Price guidance where relevant
+- Any must-know local context
+
+Use markdown formatting with clear headings (##) and bullet points. Be specific — avoid generic travel-brochure language. Aim for the quality of advice from a well-traveled local friend.`;
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 2048,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return { answer: message.content[0].text };
+}
+
+/**
  * Cross-reference location + date for major festivals/events
  */
 export async function getLocalFestivals({ location, date }) {

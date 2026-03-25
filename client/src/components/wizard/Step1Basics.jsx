@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
-import { CalendarIcon, PlaneTakeoff, Users, DollarSign } from 'lucide-react';
+import { CalendarIcon, PlaneTakeoff, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { LocationAutocomplete } from './LocationAutocomplete.jsx';
 import 'react-day-picker/dist/style.css';
 
 const BUDGET_TIERS = [
@@ -65,25 +65,23 @@ export function Step1Basics({ data, onChange, onNext }) {
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="origin">Origin city / airport</Label>
-            <Input
-              id="origin"
-              placeholder="e.g. London, LHR"
+            <Label>Origin city / airport</Label>
+            <LocationAutocomplete
               value={data.originCity}
-              onChange={(e) => onChange({ originCity: e.target.value })}
-              className={cn(errors.originCity && 'border-destructive')}
+              onChange={(v) => onChange({ originCity: v })}
+              placeholder="e.g. London, New York"
+              inputClassName={cn(errors.originCity && 'border-destructive')}
             />
             {errors.originCity && (
               <p className="text-xs text-destructive">{errors.originCity}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="return">Return to (default: same)</Label>
-            <Input
-              id="return"
-              placeholder="Leave blank for same as origin"
+            <Label>Return to (default: same)</Label>
+            <LocationAutocomplete
               value={data.returnCity}
-              onChange={(e) => onChange({ returnCity: e.target.value })}
+              onChange={(v) => onChange({ returnCity: v })}
+              placeholder="Leave blank for same as origin"
             />
           </div>
         </CardContent>

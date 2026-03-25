@@ -5,6 +5,7 @@ import { recommendationsRouter } from './routes/recommendations.js';
 import { searchRouter } from './routes/search.js';
 import { geoRouter } from './routes/geo.js';
 import { tripsRouter } from './routes/trips.js';
+import { researchRouter } from './routes/research.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,6 +23,7 @@ app.use('/api/recommendations', recommendationsRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/geo', geoRouter);
 app.use('/api/trips', tripsRouter);
+app.use('/api/research', researchRouter);
 
 app.listen(PORT, () => {
   console.log(`TripForge server running on http://localhost:${PORT}`);
