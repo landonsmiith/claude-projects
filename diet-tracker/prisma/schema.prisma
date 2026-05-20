@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FoodLog {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  mealType    String   // breakfast, lunch, dinner, snack
+  description String
+  calories    Float
+  protein     Float    // grams
+  carbs       Float    // grams
+  fat         Float    // grams
+  fiber       Float?
+  sugar       Float?
+  sodium      Float?   // mg
+  createdAt   DateTime @default(now())
+}
+
+model ExerciseLog {
+  id             String   @id @default(cuid())
+  date           DateTime @default(now())
+  description    String
+  caloriesBurned Float
+  durationMins   Int?
+  createdAt      DateTime @default(now())
+}
+
+model WeightLog {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  weight    Float    // lbs
+  createdAt DateTime @default(now())
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  subscription Json
+  createdAt    DateTime @default(now())
+}
+
+model Settings {
+  id           String @id @default("singleton")
+  calorieGoal  Float  @default(2200)
+  proteinGoal  Float  @default(150)
+  carbGoal     Float  @default(250)
+  fatGoal      Float  @default(70)
+}
