@@ -4,8 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KINETIC Persona3D</title>
-  <!-- Single blocking CDN request; everything else is deferred or lazy -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <!-- Three.js via ES-module build (proven-good); everything else is inline or lazy -->
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js" } }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -381,7 +383,17 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+import * as THREE from 'three';
+
+// Fail loud: if anything throws during init, surface it on the loading screen
+// instead of hanging silently on the spinner.
+window.addEventListener('error', e => {
+  const l = document.getElementById('loading');
+  if (l) l.innerHTML = '<p style="color:#f87171;max-width:420px;text-align:center">'
+    + 'Failed to initialize: ' + (e.message || 'unknown error') + '</p>';
+});
+
 // ── Data generation ──────────────────────────────────────────────────────────
 const PERSONAS = ["Wellness Seeker","Budget Conscious","Tech Adopter","Family Focused","Loyal Advocate"];
 const COLORS   = ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"];
