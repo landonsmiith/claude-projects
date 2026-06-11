@@ -469,16 +469,17 @@ function ds()  { return DATASETS[S.dsIdx]; }
 function applyFilters() {
   const f = S.filters;
   let vis = 0;
+  const perCluster = [0,0,0,0,0];
   S.mask = pts().map(p => {
     const ok = S.personas[p.cluster_id]
       && p.age >= f.ageMin && p.age <= f.ageMax
       && (!f.incomeTiers.length || f.incomeTiers.includes(p.income_tier))
       && (!f.regions.length    || f.regions.includes(p.region))
       && p.engagement >= f.engMin && p.engagement <= f.engMax;
-    if (ok) vis++;
+    if (ok) { vis++; perCluster[p.cluster_id]++; }
     return ok;
   });
-  updateSidebarCounts(vis);
+  updateSidebarCounts(vis, perCluster);
   if (S.onFilter) S.onFilter(S.mask);
   if (window._mapUpdate) window._mapUpdate(S.mask);
 }
@@ -515,10 +516,7 @@ function buildSidebar() {
         <span class="p-cnt" id="p-cnt-${i}"></span>
       </div>`).join('');
 
-  // Cluster counts
-  const counts = [0,0,0,0,0];
-  pts().forEach(p => counts[p.cluster_id]++);
-  PERSONAS.forEach((_,i) => { document.getElementById(`p-cnt-${i}`).textContent = counts[i]; });
+  // Per-cluster counts are filled in by applyFilters() so they reconcile with All
 
   document.getElementById('p-all').addEventListener('click', () => {
     const allOn = S.personas.every(v=>v);
@@ -552,13 +550,18 @@ function updateSidebarSub() {
   document.getElementById('sb-sub').textContent =
     `${ds().name} · ${S.mask.filter(Boolean).length || pts().length} / ${pts().length} points`;
 }
-function updateSidebarCounts(vis) {
+function updateSidebarCounts(vis, perCluster) {
   document.getElementById('pts-count').textContent = `${vis} / ${pts().length}`;
   document.getElementById('sb-sub').textContent = `${ds().name} · ${vis} / ${pts().length} points`;
   const allOn = S.personas.every(v=>v);
   const allCnt = document.getElementById('p-all-cnt');
   if (allCnt) allCnt.textContent = vis;
   document.getElementById('p-all').classList.toggle('on', allOn);
+  // Per-cluster counts track the same mask, so they always sum to the All total
+  if (perCluster) perCluster.forEach((c,i) => {
+    const el = document.getElementById(`p-cnt-${i}`);
+    if (el) el.textContent = c;
+  });
 }
 
 function switchDataset(i) {
