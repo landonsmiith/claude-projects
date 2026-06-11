@@ -3,15 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Cluster Explorer</title>
+  <title>KINETIC Persona3D</title>
 
-  <!-- Alpine.js v3 -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-  <!-- GSAP 3 -->
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-
-  <!-- Three.js r158 via importmap -->
   <script type="importmap">
   {
     "imports": {
@@ -22,701 +17,297 @@
   </script>
 
   <style>
-    /* =============================================
-       RESET & BASE
-    ============================================= */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:           #0f0f0f;
-      --sidebar-bg:   #161618;
-      --panel-bg:     #1a1a1e;
-      --border:       #2a2a30;
-      --text:         #e4e4e7;
-      --text-muted:   #71717a;
-      --text-dim:     #3f3f46;
-      --sidebar-w:    280px;
-      --detail-w:     300px;
-
-      --c0: #2dd4bf;   /* teal   — Wellness Seeker    */
-      --c1: #f59e0b;   /* amber  — Budget Conscious   */
-      --c2: #8b5cf6;   /* violet — Tech Adopter       */
-      --c3: #f87171;   /* coral  — Family Focused     */
-      --c4: #38bdf8;   /* sky    — Loyal Advocate     */
+      --bg:         #0f0f0f;
+      --sidebar-bg: #161618;
+      --panel-bg:   #1a1a1e;
+      --border:     #2a2a30;
+      --text:       #e4e4e7;
+      --muted:      #71717a;
+      --dim:        #3f3f46;
+      --sidebar-w:  288px;
+      --detail-w:   310px;
+      --c0: #2dd4bf;
+      --c1: #f59e0b;
+      --c2: #8b5cf6;
+      --c3: #f87171;
+      --c4: #38bdf8;
     }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      font-size: 13px;
-      overflow: hidden;
-    }
+    html, body { height: 100%; background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; font-size: 13px; overflow: hidden; }
 
-    /* =============================================
-       LAYOUT SHELL
-    ============================================= */
-    #app {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      position: relative;
-    }
+    #app { display: flex; height: 100vh; width: 100vw; position: relative; }
 
-    /* =============================================
-       LEFT SIDEBAR
-    ============================================= */
-    #sidebar {
-      width: var(--sidebar-w);
-      min-width: var(--sidebar-w);
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      overflow-x: hidden;
-      z-index: 10;
-    }
-
+    /* ── Sidebar ── */
+    #sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--sidebar-bg);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      overflow-y: auto; overflow-x: hidden; z-index: 10; }
     #sidebar::-webkit-scrollbar { width: 4px; }
-    #sidebar::-webkit-scrollbar-track { background: transparent; }
     #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    .sidebar-header {
-      padding: 20px 16px 14px;
-      border-bottom: 1px solid var(--border);
-    }
+    .sb-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+    .sb-header h1 { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+    .sb-header p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    .sidebar-header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      color: var(--text);
-    }
+    .sb-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .sec-label  { font-size: 10px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 
-    .sidebar-header p {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-
-    .sidebar-section {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .section-label {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
+    /* Dataset selector */
+    .dataset-card { background: rgba(99,102,241,.07); border: 1px solid rgba(99,102,241,.2);
+      border-radius: 8px; padding: 10px 12px; cursor: pointer; margin-bottom: 6px;
+      transition: background .15s, border-color .15s; }
+    .dataset-card:hover { background: rgba(99,102,241,.12); border-color: rgba(99,102,241,.4); }
+    .dataset-card.active { background: rgba(99,102,241,.15); border-color: #6366f1; }
+    .dataset-card .ds-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .dataset-card .ds-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .ds-tag { font-size: 10px; padding: 2px 6px; border-radius: 10px;
+      background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); }
 
     /* Persona toggles */
-    .persona-list {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .persona-toggle {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 7px 10px;
-      border-radius: 7px;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: background 0.15s, border-color 0.15s;
-      user-select: none;
-    }
-
-    .persona-toggle:hover { background: rgba(255,255,255,0.04); }
-
-    .persona-toggle.active {
-      background: rgba(255,255,255,0.06);
-      border-color: var(--border);
-    }
-
+    .persona-list { display: flex; flex-direction: column; gap: 4px; }
+    .persona-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+      border-radius: 7px; cursor: pointer; border: 1px solid transparent;
+      transition: background .15s, border-color .15s; user-select: none; }
+    .persona-toggle:hover { background: rgba(255,255,255,.04); }
+    .persona-toggle.active { background: rgba(255,255,255,.06); border-color: var(--border); }
     .persona-toggle input[type="checkbox"] { display: none; }
+    .persona-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; transition: opacity .15s; }
+    .persona-toggle:not(.active) .persona-dot { opacity: .3; }
+    .persona-name { font-size: 12px; font-weight: 500; flex: 1; }
+    .persona-count { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.06);
+      padding: 1px 6px; border-radius: 9px; }
 
-    .persona-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      transition: opacity 0.15s;
-    }
-
-    .persona-toggle:not(.active) .persona-dot { opacity: 0.35; }
-
-    .persona-name {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text);
-      flex: 1;
-    }
-
-    .persona-count {
-      font-size: 10px;
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.06);
-      padding: 1px 6px;
-      border-radius: 9px;
-    }
-
-    /* Filter controls */
-    .filter-group {
-      margin-bottom: 11px;
-    }
-
+    /* Filters */
+    .filter-group { margin-bottom: 10px; }
     .filter-group:last-child { margin-bottom: 0; }
-
-    .filter-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 5px;
-      font-weight: 500;
-    }
-
-    .filter-select {
-      width: 100%;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
-      appearance: none;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.15s;
+    .filter-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500;
+      display: flex; justify-content: space-between; align-items: center; }
+    .filter-select { width: 100%; background: rgba(255,255,255,.05); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 6px 28px 6px 10px; font-size: 12px;
+      appearance: none; cursor: pointer; outline: none; transition: border-color .15s;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' viewBox='0 0 10 6'%3E%3Cpath stroke='%2371717a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 28px;
-    }
-
+      background-repeat: no-repeat; background-position: right 10px center; }
     .filter-select:hover, .filter-select:focus { border-color: #3f3f46; }
     .filter-select option { background: #1a1a1e; }
 
     /* Range slider */
-    .range-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .range-row { display: flex; flex-direction: column; gap: 5px; }
+    .range-vals { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+    .range-val { font-size: 11px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+      border-radius: 2px; background: linear-gradient(to right,
+        #3f3f46 0%, #3f3f46 var(--min-pct,0%), #6366f1 var(--min-pct,0%),
+        #6366f1 var(--max-pct,100%), #3f3f46 var(--max-pct,100%), #3f3f46 100%);
+      cursor: pointer; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: #fff; border: 2px solid #6366f1; cursor: pointer; }
+    input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%;
+      background: #fff; border: 2px solid #6366f1; cursor: pointer; }
 
-    .range-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-
-    .range-value {
-      font-size: 11px;
-      color: var(--text);
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
-
-    input[type="range"] {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 4px;
-      border-radius: 2px;
-      background: linear-gradient(to right,
-        #3f3f46 0%, #3f3f46 var(--min-pct, 0%),
-        #6366f1 var(--min-pct, 0%), #6366f1 var(--max-pct, 100%),
-        #3f3f46 var(--max-pct, 100%), #3f3f46 100%);
-      cursor: pointer;
-      outline: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #fff;
-      border: 2px solid #6366f1;
-      cursor: pointer;
-      box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
-    }
-
-    input[type="range"]::-moz-range-thumb {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #fff;
-      border: 2px solid #6366f1;
-      cursor: pointer;
-    }
-
-    /* Reset button */
-    .reset-btn {
-      width: 100%;
-      padding: 8px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      letter-spacing: 0.01em;
-    }
-
-    .reset-btn:hover {
-      background: rgba(255,255,255,0.08);
-      color: var(--text);
-      border-color: #3f3f46;
-    }
+    .custom-range-btn { font-size: 10px; color: #818cf8; cursor: pointer; background: none;
+      border: none; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+    .custom-range-btn:hover { color: #a5b4fc; }
 
     /* Points counter */
-    .points-count {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(99,102,241,0.05);
-    }
+    .pts-count { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 16px; border-bottom: 1px solid var(--border); background: rgba(99,102,241,.04); }
+    .pts-count span { font-size: 11px; color: var(--muted); }
+    .pts-count strong { font-size: 12px; color: #818cf8; font-variant-numeric: tabular-nums; }
 
-    .points-count span:first-child {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .points-count strong {
-      font-size: 12px;
-      color: #818cf8;
-      font-variant-numeric: tabular-nums;
-    }
+    .reset-btn { width: 100%; padding: 8px; background: rgba(255,255,255,.04);
+      border: 1px solid var(--border); border-radius: 7px; color: var(--muted);
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
+    .reset-btn:hover { background: rgba(255,255,255,.08); color: var(--text); }
 
     /* Legend */
-    .legend-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .legend-list { display: flex; flex-direction: column; gap: 7px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .legend-label { font-size: 11px; color: var(--muted); }
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-    }
+    /* Logo area */
+    #logo-area { padding: 12px 16px; margin-top: auto; border-top: 1px solid var(--border);
+      background: #fff; display: flex; align-items: center; gap: 8px; }
+    #logo-area img { height: 28px; width: auto; display: block; }
+    .logo-fallback { display: flex; align-items: center; gap: 3px; }
+    .logo-n1 { width: 32px; height: 32px; background: #007CC2; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -1px; }
+    .logo-text { font-size: 18px; font-weight: 400; color: #6b7280; letter-spacing: -0.5px; }
 
-    .legend-swatch {
-      width: 10px;
-      height: 10px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
+    /* ── Canvas ── */
+    #canvas-container { flex: 1; position: relative; overflow: hidden; }
+    #three-canvas { display: block; width: 100%; height: 100%; }
 
-    .legend-label {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
+    /* HUD */
+    #camera-hud { position: absolute; top: 16px; right: 16px; display: flex;
+      flex-direction: column; gap: 5px; z-index: 20; transition: right .28s cubic-bezier(.4,0,.2,1); }
+    #camera-hud.panel-open { right: calc(var(--detail-w) + 16px); }
+    .hud-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+      background: rgba(22,22,24,.88); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--muted); cursor: pointer; font-size: 15px; font-weight: 500; line-height: 1;
+      backdrop-filter: blur(6px); transition: background .15s, color .15s; user-select: none; }
+    .hud-btn:hover { background: rgba(40,40,45,.95); color: var(--text); border-color: #3f3f46; }
+    .hud-reset { width: auto; padding: 0 12px; font-size: 11px; font-weight: 600;
+      letter-spacing: .03em; gap: 5px; white-space: nowrap; }
 
-    .sidebar-footer {
-      padding: 14px 16px;
-      border-top: 1px solid var(--border);
-      margin-top: auto;
-    }
+    /* Tooltip */
+    #tooltip { position: absolute; pointer-events: none; background: rgba(22,22,24,.92);
+      border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px;
+      font-size: 11px; color: var(--text); backdrop-filter: blur(8px); z-index: 30;
+      display: none; max-width: 180px; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+    .tt-persona { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+    .tt-id { color: var(--muted); font-size: 10px; }
 
-    /* =============================================
-       CANVAS AREA
-    ============================================= */
-    #canvas-container {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
-
-    #three-canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* =============================================
-       CAMERA HUD (top-right)
-    ============================================= */
-    #camera-hud {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      z-index: 20;
-    }
-
-    /* When detail panel is open shift hud left */
-    #camera-hud.panel-open {
-      right: calc(var(--detail-w) + 16px);
-    }
-
-    .hud-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: rgba(22,22,24,0.85);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 500;
-      line-height: 1;
-      backdrop-filter: blur(6px);
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      user-select: none;
-    }
-
-    .hud-btn:hover {
-      background: rgba(40,40,45,0.95);
-      color: var(--text);
-      border-color: #3f3f46;
-    }
-
-    .hud-reset {
-      width: auto;
-      padding: 0 12px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      gap: 5px;
-      white-space: nowrap;
-    }
-
-    /* =============================================
-       TOOLTIP
-    ============================================= */
-    #tooltip {
-      position: absolute;
-      pointer-events: none;
-      background: rgba(22,22,24,0.92);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 11px;
-      color: var(--text);
-      backdrop-filter: blur(8px);
-      z-index: 30;
-      display: none;
-      max-width: 180px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-    }
-
-    #tooltip .tt-persona {
-      font-weight: 600;
-      font-size: 12px;
-      margin-bottom: 2px;
-    }
-
-    #tooltip .tt-id {
-      color: var(--text-muted);
-      font-size: 10px;
-    }
-
-    /* =============================================
-       RIGHT DETAIL PANEL
-    ============================================= */
-    #detail-panel {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: var(--detail-w);
-      height: 100%;
-      background: var(--panel-bg);
-      border-left: 1px solid var(--border);
-      transform: translateX(100%);
-      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 25;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-    }
-
-    #detail-panel.open {
-      transform: translateX(0);
-    }
-
+    /* Detail panel */
+    #detail-panel { position: absolute; top: 0; right: 0; width: var(--detail-w); height: 100%;
+      background: var(--panel-bg); border-left: 1px solid var(--border);
+      transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1);
+      z-index: 25; display: flex; flex-direction: column; overflow-y: auto; }
+    #detail-panel.open { transform: translateX(0); }
     #detail-panel::-webkit-scrollbar { width: 4px; }
-    #detail-panel::-webkit-scrollbar-track { background: transparent; }
     #detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    .detail-header {
-      padding: 18px 16px 14px;
-      border-bottom: 1px solid var(--border);
-      position: relative;
-    }
+    .dp-header { padding: 16px; border-bottom: 1px solid var(--border); position: relative; }
+    .dp-close { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center; border-radius: 6px;
+      cursor: pointer; color: var(--muted); font-size: 16px; background: transparent;
+      border: none; transition: background .15s, color .15s; }
+    .dp-close:hover { background: rgba(255,255,255,.07); color: var(--text); }
+    .dp-persona-name { font-size: 18px; font-weight: 700; letter-spacing: -.02em;
+      margin-bottom: 8px; padding-right: 32px; line-height: 1.2; }
+    .dp-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 600; letter-spacing: .04em; border: 1px solid; }
+    .badge-cluster { border-color: rgba(255,255,255,.15); color: var(--muted); background: rgba(255,255,255,.04); }
+    .badge-method  { border-color: rgba(99,102,241,.3); color: #818cf8; background: rgba(99,102,241,.08); }
 
-    .detail-close {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      width: 26px;
-      height: 26px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      cursor: pointer;
-      color: var(--text-muted);
-      font-size: 16px;
-      line-height: 1;
-      transition: background 0.15s, color 0.15s;
-      background: transparent;
-      border: none;
-    }
+    .dp-body { padding: 14px; flex: 1; }
+    .dp-id { font-size: 11px; color: var(--muted); background: rgba(255,255,255,.04);
+      border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; margin-bottom: 14px;
+      font-family: monospace; letter-spacing: .04em; }
+    .dp-id span { color: var(--dim); font-size: 10px; margin-right: 4px; }
+    .dp-divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .dp-row { display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .dp-row:last-child { border-bottom: none; }
+    .dp-row-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .dp-row-value { font-size: 12px; color: var(--text); font-weight: 500; text-align: right; }
+    .eng-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 100px; }
+    .eng-bg { width: 100px; height: 5px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
+    .eng-fill { height: 100%; border-radius: 3px; transition: width .4s cubic-bezier(.4,0,.2,1); }
 
-    .detail-close:hover {
-      background: rgba(255,255,255,0.07);
-      color: var(--text);
-    }
+    .dp-coords { background: rgba(255,255,255,.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-top: 12px; }
+    .dp-coords-title { font-size: 10px; color: var(--muted); font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+    .dp-coords-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .coord-cell { display: flex; flex-direction: column; gap: 2px; }
+    .coord-axis { font-size: 9px; color: var(--dim); text-transform: uppercase; font-weight: 700; letter-spacing: .08em; }
+    .coord-val { font-size: 12px; color: var(--text); font-family: monospace; font-variant-numeric: tabular-nums; }
 
-    .detail-persona-name {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
-      padding-right: 32px;
-      line-height: 1.2;
-    }
+    .dp-latlon { background: rgba(255,255,255,.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+    .dp-latlon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-    .detail-badges {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      border: 1px solid;
-    }
-
-    .badge-cluster {
-      border-color: rgba(255,255,255,0.15);
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.04);
-    }
-
-    .detail-body {
-      padding: 16px;
-      flex: 1;
-    }
-
-    .detail-id {
-      font-size: 11px;
-      color: var(--text-muted);
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 7px 10px;
-      margin-bottom: 16px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      letter-spacing: 0.04em;
-    }
-
-    .detail-id span {
-      color: var(--text-dim);
-      font-size: 10px;
-      margin-right: 4px;
-    }
-
-    .detail-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 14px 0;
-    }
-
-    .detail-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-    }
-
-    .detail-row:last-child { border-bottom: none; }
-
-    .detail-row-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .detail-row-value {
-      font-size: 12px;
-      color: var(--text);
-      font-weight: 500;
-      text-align: right;
-    }
-
-    /* Engagement progress bar */
-    .engagement-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
-      min-width: 100px;
-    }
-
-    .engagement-bar-bg {
-      width: 100px;
-      height: 5px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .engagement-bar-fill {
-      height: 100%;
-      border-radius: 3px;
-      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Coords card */
-    .detail-coords {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-top: 14px;
-    }
-
-    .detail-coords-title {
-      font-size: 10px;
-      color: var(--text-muted);
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    .detail-coords-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-    }
-
-    .coord-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .coord-axis {
-      font-size: 9px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-    }
-
-    .coord-val {
-      font-size: 12px;
-      color: var(--text);
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* =============================================
-       LOADING OVERLAY
-    ============================================= */
-    #loading {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      gap: 14px;
-      transition: opacity 0.4s;
-    }
-
-    #loading.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loader-ring {
-      width: 36px;
-      height: 36px;
-      border: 2px solid var(--border);
-      border-top-color: #6366f1;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
+    /* Loading */
+    #loading { position: fixed; inset: 0; background: var(--bg); display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      z-index: 100; gap: 14px; transition: opacity .4s; }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .loader-ring { width: 36px; height: 36px; border: 2px solid var(--border);
+      border-top-color: #6366f1; border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { font-size: 13px; color: var(--muted); }
 
-    #loading p {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    /* =============================================
-       UTILITY
-    ============================================= */
-    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    /* Custom range modal */
+    #range-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200;
+      display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #range-modal.hidden { display: none; }
+    .modal-box { background: #1a1a1e; border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; width: 280px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+    .modal-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+    .modal-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .modal-field { flex: 1; }
+    .modal-field label { font-size: 10px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 5px; }
+    .modal-field input { width: 100%; background: rgba(255,255,255,.06); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 10px; color: var(--text); font-size: 13px; outline: none; }
+    .modal-field input:focus { border-color: #6366f1; }
+    .modal-actions { display: flex; gap: 8px; }
+    .modal-cancel { flex: 1; padding: 8px; background: rgba(255,255,255,.04);
+      border: 1px solid var(--border); border-radius: 7px; color: var(--muted);
+      font-size: 12px; cursor: pointer; }
+    .modal-apply { flex: 1; padding: 8px; background: #6366f1; border: none;
+      border-radius: 7px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .modal-apply:hover { background: #4f46e5; }
   </style>
 </head>
-
 <body>
 
-<!-- Loading overlay -->
-<div id="loading">
-  <div class="loader-ring"></div>
-  <p>Loading cluster data&hellip;</p>
+<div id="loading"><div class="loader-ring"></div><p>Initializing KINETIC Persona3D…</p></div>
+
+<!-- Custom range modal -->
+<div id="range-modal" class="hidden">
+  <div class="modal-box">
+    <div class="modal-title">Custom Range</div>
+    <div class="modal-sub" id="modal-field-name">Engagement Score (0 – 1)</div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Min</label>
+        <input type="number" id="modal-min" step="0.01" min="0" max="1" />
+      </div>
+      <div class="modal-field">
+        <label>Max</label>
+        <input type="number" id="modal-max" step="0.01" min="0" max="1" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modal-cancel">Cancel</button>
+      <button class="modal-apply" id="modal-apply">Apply</button>
+    </div>
+  </div>
 </div>
 
-<!-- ====================================================
-     APP SHELL
-===================================================== -->
 <div id="app">
 
-  <!-- ================================================
-       LEFT SIDEBAR — Alpine.js controlled
-  ================================================= -->
+  <!-- ── SIDEBAR ── -->
   <aside id="sidebar" x-data="sidebarApp()" x-init="init()">
 
-    <div class="sidebar-header">
-      <h1>3D Cluster Explorer</h1>
-      <p>500 points &middot; 5 personas</p>
+    <div class="sb-header">
+      <h1>KINETIC Persona3D</h1>
+      <p x-text="currentDataset.name + ' · ' + visibleCount + ' / ' + totalCount + ' points'"></p>
+    </div>
+
+    <!-- Dataset selector -->
+    <div class="sb-section">
+      <div class="sec-label">Data Source</div>
+      <template x-for="(ds, i) in datasets" :key="i">
+        <div class="dataset-card" :class="{ active: activeDataset === i }" @click="switchDataset(i)">
+          <div class="ds-name" x-text="ds.name"></div>
+          <div class="ds-tags">
+            <span class="ds-tag" x-text="ds.dim_reduction"></span>
+            <span class="ds-tag" x-text="ds.clustering_method"></span>
+            <span class="ds-tag" x-text="ds.points.length + ' pts'"></span>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- Persona toggles -->
-    <div class="sidebar-section">
-      <div class="section-label">Personas</div>
+    <div class="sb-section">
+      <div class="sec-label">Personas</div>
       <div class="persona-list">
-
-        <!-- All toggle -->
         <label class="persona-toggle" :class="{ active: allSelected }" @click.prevent="toggleAll()">
-          <span class="persona-dot" style="background:#6366f1;"></span>
+          <span class="persona-dot" style="background:#6366f1"></span>
           <span class="persona-name">All Clusters</span>
           <span class="persona-count" x-text="visibleCount"></span>
         </label>
-
         <template x-for="(p, i) in personas" :key="i">
           <label class="persona-toggle" :class="{ active: selectedPersonas[i] }">
             <input type="checkbox" :checked="selectedPersonas[i]" @change="togglePersona(i)" />
@@ -725,23 +316,19 @@
             <span class="persona-count" x-text="clusterCounts[i]"></span>
           </label>
         </template>
-
       </div>
     </div>
 
     <!-- Feature filters -->
-    <div class="sidebar-section">
-      <div class="section-label">Feature Filters</div>
+    <div class="sb-section">
+      <div class="sec-label">Feature Filters</div>
 
       <div class="filter-group">
         <div class="filter-label">Age Band</div>
         <select class="filter-select" x-model="filters.ageBand" @change="applyFilters()">
           <option value="">All Ages</option>
-          <option>18-24</option>
-          <option>25-34</option>
-          <option>35-44</option>
-          <option>45-54</option>
-          <option>55+</option>
+          <option>18-24</option><option>25-34</option><option>35-44</option>
+          <option>45-54</option><option>55+</option>
         </select>
       </div>
 
@@ -749,9 +336,7 @@
         <div class="filter-label">Income Tier</div>
         <select class="filter-select" x-model="filters.incomeTier" @change="applyFilters()">
           <option value="">All Tiers</option>
-          <option>Low</option>
-          <option>Mid</option>
-          <option>High</option>
+          <option>Low</option><option>Mid</option><option>High</option>
         </select>
       </div>
 
@@ -759,47 +344,42 @@
         <div class="filter-label">Region</div>
         <select class="filter-select" x-model="filters.region" @change="applyFilters()">
           <option value="">All Regions</option>
-          <option>Northeast</option>
-          <option>Southeast</option>
-          <option>Midwest</option>
-          <option>West</option>
+          <option>Northeast</option><option>Southeast</option>
+          <option>Midwest</option><option>West</option>
         </select>
       </div>
 
       <div class="filter-group">
         <div class="filter-label">
-          Engagement Score
-          <span style="float:right" class="range-value" x-text="filters.engagementMin.toFixed(2) + ' – ' + filters.engagementMax.toFixed(2)"></span>
+          <span>Engagement Score
+            <span class="range-val" x-text="' ' + filters.engMin.toFixed(2) + ' – ' + filters.engMax.toFixed(2)"></span>
+          </span>
+          <button class="custom-range-btn" @click="openRangeModal()">custom</button>
         </div>
-        <div class="range-wrapper">
-          <input type="range" min="0" max="1" step="0.01"
-            x-model.number="filters.engagementMin"
-            @input="clampMin(); applyFilters()"
-            :style="rangeStyle()" />
-          <input type="range" min="0" max="1" step="0.01"
-            x-model.number="filters.engagementMax"
-            @input="clampMax(); applyFilters()"
-            :style="rangeStyle()" />
-          <div class="range-labels"><span>0.00</span><span>1.00</span></div>
+        <div class="range-row">
+          <input type="range" min="0" max="1" step="0.01" x-model.number="filters.engMin"
+            @input="clampMin(); applyFilters()" :style="rangeStyle()" />
+          <input type="range" min="0" max="1" step="0.01" x-model.number="filters.engMax"
+            @input="clampMax(); applyFilters()" :style="rangeStyle()" />
+          <div class="range-vals"><span>0.00</span><span>1.00</span></div>
         </div>
       </div>
-
     </div>
 
-    <!-- Points count -->
-    <div class="points-count">
+    <!-- Counter -->
+    <div class="pts-count">
       <span>Visible points</span>
-      <strong x-text="visibleCount + ' / 500'"></strong>
+      <strong x-text="visibleCount + ' / ' + totalCount"></strong>
     </div>
 
     <!-- Reset -->
-    <div class="sidebar-section">
+    <div class="sb-section">
       <button class="reset-btn" @click="resetFilters()">Reset All Filters</button>
     </div>
 
     <!-- Legend -->
-    <div class="sidebar-footer">
-      <div class="section-label" style="margin-bottom:10px">Legend</div>
+    <div class="sb-section">
+      <div class="sec-label">Legend</div>
       <div class="legend-list">
         <template x-for="(p, i) in personas" :key="i">
           <div class="legend-item">
@@ -810,139 +390,210 @@
       </div>
     </div>
 
+    <!-- Logo -->
+    <div id="logo-area">
+      <div class="logo-fallback">
+        <div class="logo-n1">n1</div>
+        <span class="logo-text">health</span>
+      </div>
+    </div>
+
   </aside>
 
-  <!-- ================================================
-       CANVAS AREA
-  ================================================= -->
+  <!-- ── CANVAS ── -->
   <div id="canvas-container">
     <canvas id="three-canvas"></canvas>
 
-    <!-- Camera HUD -->
     <div id="camera-hud">
-      <button class="hud-btn hud-reset" id="btn-reset-view" title="Reset camera view">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      <button class="hud-btn hud-reset" id="btn-reset">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
         &nbsp;Reset View
       </button>
-      <button class="hud-btn" id="btn-zoom-in" title="Zoom in">+</button>
-      <button class="hud-btn" id="btn-zoom-out" title="Zoom out">&minus;</button>
+      <button class="hud-btn" id="btn-zi">+</button>
+      <button class="hud-btn" id="btn-zo">&minus;</button>
     </div>
 
-    <!-- Tooltip -->
     <div id="tooltip">
       <div class="tt-persona" id="tt-persona"></div>
       <div class="tt-id" id="tt-id"></div>
     </div>
   </div>
 
-  <!-- ================================================
-       RIGHT DETAIL PANEL
-  ================================================= -->
+  <!-- ── DETAIL PANEL ── -->
   <div id="detail-panel">
-    <div class="detail-header">
-      <button class="detail-close" id="detail-close-btn" title="Close">&#x2715;</button>
-      <div class="detail-persona-name" id="dp-persona"></div>
-      <div class="detail-badges">
+    <div class="dp-header">
+      <button class="dp-close" id="dp-close">&#x2715;</button>
+      <div class="dp-persona-name" id="dp-persona"></div>
+      <div class="dp-badges">
         <span class="badge badge-cluster" id="dp-cluster-badge"></span>
+        <span class="badge badge-method"  id="dp-method-badge"></span>
       </div>
     </div>
-
-    <div class="detail-body">
-      <div class="detail-id"><span>ID</span><span id="dp-id"></span></div>
-
-      <div class="detail-divider"></div>
-
-      <div class="detail-row">
-        <span class="detail-row-label">Age Band</span>
-        <span class="detail-row-value" id="dp-age"></span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-row-label">Income Tier</span>
-        <span class="detail-row-value" id="dp-income"></span>
-      </div>
-      <div class="detail-row">
-        <span class="detail-row-label">Region</span>
-        <span class="detail-row-value" id="dp-region"></span>
-      </div>
-      <div class="detail-row" style="align-items:flex-start; padding-top:10px;">
-        <span class="detail-row-label" style="padding-top:4px;">Engagement</span>
-        <div class="engagement-wrap">
-          <span class="detail-row-value" id="dp-engagement-val"></span>
-          <div class="engagement-bar-bg">
-            <div class="engagement-bar-fill" id="dp-engagement-bar"></div>
-          </div>
+    <div class="dp-body">
+      <div class="dp-id"><span>ID</span><span id="dp-id"></span></div>
+      <div class="dp-divider"></div>
+      <div class="dp-row"><span class="dp-row-label">Age Band</span>   <span class="dp-row-value" id="dp-age"></span></div>
+      <div class="dp-row"><span class="dp-row-label">Income Tier</span><span class="dp-row-value" id="dp-income"></span></div>
+      <div class="dp-row"><span class="dp-row-label">Region</span>     <span class="dp-row-value" id="dp-region"></span></div>
+      <div class="dp-row" style="align-items:flex-start;padding-top:9px">
+        <span class="dp-row-label" style="padding-top:3px">Engagement</span>
+        <div class="eng-wrap">
+          <span class="dp-row-value" id="dp-eng-val"></span>
+          <div class="eng-bg"><div class="eng-fill" id="dp-eng-bar"></div></div>
         </div>
       </div>
 
-      <div class="detail-coords">
-        <div class="detail-coords-title">3D Coordinates</div>
-        <div class="detail-coords-grid">
-          <div class="coord-cell">
-            <span class="coord-axis">X</span>
-            <span class="coord-val" id="dp-x"></span>
-          </div>
-          <div class="coord-cell">
-            <span class="coord-axis">Y</span>
-            <span class="coord-val" id="dp-y"></span>
-          </div>
-          <div class="coord-cell">
-            <span class="coord-axis">Z</span>
-            <span class="coord-val" id="dp-z"></span>
-          </div>
+      <div class="dp-coords">
+        <div class="dp-coords-title">3D Embedding Coords</div>
+        <div class="dp-coords-grid">
+          <div class="coord-cell"><span class="coord-axis">X</span><span class="coord-val" id="dp-x"></span></div>
+          <div class="coord-cell"><span class="coord-axis">Y</span><span class="coord-val" id="dp-y"></span></div>
+          <div class="coord-cell"><span class="coord-axis">Z</span><span class="coord-val" id="dp-z"></span></div>
+        </div>
+      </div>
+
+      <div class="dp-latlon">
+        <div class="dp-coords-title">Geographic Location</div>
+        <div class="dp-latlon-grid">
+          <div class="coord-cell"><span class="coord-axis">Lat</span><span class="coord-val" id="dp-lat"></span></div>
+          <div class="coord-cell"><span class="coord-axis">Lon</span><span class="coord-val" id="dp-lon"></span></div>
         </div>
       </div>
     </div>
   </div>
 
-</div><!-- /#app -->
+</div>
 
-<!-- ====================================================
-     ALPINE COMPONENT
-===================================================== -->
+<!-- ── DATA GENERATION ── -->
 <script>
-  // ---- Shared state bridge between Alpine and Three.js ----
-  window.AppState = {
-    data: [],
-    visibleMask: [],      // bool[] per point index
-    onFilterChange: null, // set by Three.js scene
-    visibleCount: 0,
+  // Seeded PRNG (mulberry32) for reproducible fake data
+  function makeRng(seed) {
+    let s = seed >>> 0;
+    return () => { s |= 0; s = s + 0x6D2B79F5 | 0;
+      let t = Math.imul(s ^ s >>> 15, 1 | s);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  }
+
+  function gauss(rng) {
+    const u = 1 - rng(), v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  const PERSONAS   = ["Wellness Seeker","Budget Conscious","Tech Adopter","Family Focused","Loyal Advocate"];
+  const AGE_BANDS  = ["18-24","25-34","35-44","45-54","55+"];
+  const INCOMES    = ["Low","Mid","High"];
+  const REGIONS    = ["Northeast","Southeast","Midwest","West"];
+
+  // cluster centers for each dataset (different spatial layouts)
+  const CENTERS = [
+    [[-3,2,-2],[3,2,3],[-2,-3,3],[3,-2,-3],[0,1,0]],      // DS1
+    [[-4,-1,1],[2,4,-1],[-1,2,4],[4,-3,2],[-2,-4,-2]],    // DS2
+    [[1,-4,3],[-3,3,-3],[4,1,-2],[-1,-2,4],[2,3,2]],      // DS3
+  ];
+
+  // US lat/lon bounds per region
+  const LAT_LON = {
+    Northeast: [[40,46],[-75,-67]],
+    Southeast: [[25,36],[-90,-75]],
+    Midwest:   [[36,47],[-97,-83]],
+    West:      [[32,49],[-125,-110]],
   };
 
+  function genDataset(seed, centerSet, dimReduction, clusteringMethod, name) {
+    const rng = makeRng(seed);
+    const points = [];
+    for (let cid = 0; cid < 5; cid++) {
+      const [cx, cy, cz] = centerSet[cid];
+      for (let j = 0; j < 100; j++) {
+        const region = REGIONS[Math.floor(rng() * 4)];
+        const [latR, lonR] = LAT_LON[region];
+        const id = `rec_${String(cid * 100 + j).padStart(3,'0')}`;
+        points.push({
+          id, cluster_id: cid, persona: PERSONAS[cid],
+          x: Math.max(-5, Math.min(5, cx + gauss(rng) * 0.9)),
+          y: Math.max(-5, Math.min(5, cy + gauss(rng) * 0.9)),
+          z: Math.max(-5, Math.min(5, cz + gauss(rng) * 0.9)),
+          lat: +(latR[0] + rng() * (latR[1] - latR[0])).toFixed(4),
+          lon: +(lonR[0] + rng() * (lonR[1] - lonR[0])).toFixed(4),
+          features: {
+            age_band:         AGE_BANDS[Math.floor(rng() * 5)],
+            income_tier:      INCOMES[Math.floor(rng() * 3)],
+            engagement_score: +rng().toFixed(2),
+            region,
+          }
+        });
+      }
+    }
+    // shuffle
+    for (let i = points.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [points[i], points[j]] = [points[j], points[i]];
+    }
+    return { name, dim_reduction: dimReduction, clustering_method: clusteringMethod, points };
+  }
+
+  window.DATASETS = [
+    genDataset(42,  CENTERS[0], 'UMAP',  'K-Means',          'Consumer Segment Q1'),
+    genDataset(137, CENTERS[1], 'PCA',   'DBSCAN',           'Behavioral Health Q2'),
+    genDataset(999, CENTERS[2], 't-SNE', 'Gaussian Mixture',  'Digital Engagement Q3'),
+  ];
+
+  window.AppState = {
+    activeDataset: 0,
+    visibleMask: [],
+    onFilterChange: null,
+    onDatasetSwitch: null,
+  };
+</script>
+
+<!-- ── ALPINE COMPONENT ── -->
+<script>
   function sidebarApp() {
     return {
-      personas: ["Wellness Seeker","Budget Conscious","Tech Adopter","Family Focused","Loyal Advocate"],
-      clusterColors: ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"],
-      selectedPersonas: [true, true, true, true, true],
-      clusterCounts: [0, 0, 0, 0, 0],
-      visibleCount: 0,
-      filters: {
-        ageBand: "",
-        incomeTier: "",
-        region: "",
-        engagementMin: 0,
-        engagementMax: 1,
-      },
+      datasets:        window.DATASETS,
+      activeDataset:   0,
+      personas:        PERSONAS,
+      clusterColors:   ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"],
+      selectedPersonas:[true,true,true,true,true],
+      clusterCounts:   [0,0,0,0,0],
+      visibleCount:    0,
+      totalCount:      0,
+      filters: { ageBand:'', incomeTier:'', region:'', engMin:0, engMax:1 },
+
+      get currentDataset() { return this.datasets[this.activeDataset]; },
+      get allSelected()    { return this.selectedPersonas.every(v => v); },
 
       init() {
-        // Wait for data to be loaded by Three.js
-        const poll = setInterval(() => {
-          if (window.AppState.data.length > 0) {
-            clearInterval(poll);
-            // Count per cluster
-            window.AppState.data.forEach(d => this.clusterCounts[d.cluster_id]++);
-            this.applyFilters();
-          }
-        }, 100);
+        this.rebuildCounts();
+        this.applyFilters();
       },
 
-      get allSelected() {
-        return this.selectedPersonas.every(v => v);
+      rebuildCounts() {
+        const pts = this.datasets[this.activeDataset].points;
+        const counts = [0,0,0,0,0];
+        pts.forEach(p => counts[p.cluster_id]++);
+        this.clusterCounts = [...counts];
+        this.totalCount = pts.length;
+      },
+
+      switchDataset(i) {
+        this.activeDataset = i;
+        window.AppState.activeDataset = i;
+        this.selectedPersonas = [true,true,true,true,true];
+        this.filters = { ageBand:'', incomeTier:'', region:'', engMin:0, engMax:1 };
+        this.rebuildCounts();
+        this.applyFilters();
+        if (window.AppState.onDatasetSwitch) window.AppState.onDatasetSwitch(i);
       },
 
       toggleAll() {
         const next = !this.allSelected;
-        this.selectedPersonas = this.selectedPersonas.map(() => next || false);
-        // If turning all off, turn all on instead
+        this.selectedPersonas = [true,true,true,true,true].map(() => next ? true : false);
         if (!next) this.selectedPersonas = [true,true,true,true,true];
         this.applyFilters();
       },
@@ -952,384 +603,348 @@
         this.applyFilters();
       },
 
-      clampMin() {
-        if (this.filters.engagementMin > this.filters.engagementMax) {
-          this.filters.engagementMin = this.filters.engagementMax;
-        }
-      },
-
-      clampMax() {
-        if (this.filters.engagementMax < this.filters.engagementMin) {
-          this.filters.engagementMax = this.filters.engagementMin;
-        }
-      },
+      clampMin() { if (this.filters.engMin > this.filters.engMax) this.filters.engMin = this.filters.engMax; },
+      clampMax() { if (this.filters.engMax < this.filters.engMin) this.filters.engMax = this.filters.engMin; },
 
       rangeStyle() {
-        const minPct = (this.filters.engagementMin * 100).toFixed(1) + '%';
-        const maxPct = (this.filters.engagementMax * 100).toFixed(1) + '%';
-        return `--min-pct:${minPct}; --max-pct:${maxPct}`;
+        return `--min-pct:${(this.filters.engMin*100).toFixed(1)}%;--max-pct:${(this.filters.engMax*100).toFixed(1)}%`;
+      },
+
+      openRangeModal() {
+        document.getElementById('modal-min').value = this.filters.engMin.toFixed(2);
+        document.getElementById('modal-max').value = this.filters.engMax.toFixed(2);
+        document.getElementById('range-modal').classList.remove('hidden');
+        const self = this;
+        document.getElementById('modal-apply').onclick = () => {
+          let mn = parseFloat(document.getElementById('modal-min').value);
+          let mx = parseFloat(document.getElementById('modal-max').value);
+          mn = Math.max(0, Math.min(1, isNaN(mn) ? 0 : mn));
+          mx = Math.max(0, Math.min(1, isNaN(mx) ? 1 : mx));
+          if (mn > mx) [mn, mx] = [mx, mn];
+          self.filters.engMin = mn;
+          self.filters.engMax = mx;
+          self.applyFilters();
+          document.getElementById('range-modal').classList.add('hidden');
+        };
+        document.getElementById('modal-cancel').onclick = () =>
+          document.getElementById('range-modal').classList.add('hidden');
       },
 
       applyFilters() {
-        const data = window.AppState.data;
-        if (!data.length) return;
-
+        const pts = this.datasets[this.activeDataset].points;
         let count = 0;
-        const mask = data.map((pt, idx) => {
-          const pass =
+        const mask = pts.map(pt => {
+          const ok =
             this.selectedPersonas[pt.cluster_id] &&
             (!this.filters.ageBand    || pt.features.age_band    === this.filters.ageBand) &&
             (!this.filters.incomeTier || pt.features.income_tier === this.filters.incomeTier) &&
             (!this.filters.region     || pt.features.region      === this.filters.region) &&
-            pt.features.engagement_score >= this.filters.engagementMin &&
-            pt.features.engagement_score <= this.filters.engagementMax;
-          if (pass) count++;
-          return pass;
+            pt.features.engagement_score >= this.filters.engMin &&
+            pt.features.engagement_score <= this.filters.engMax;
+          if (ok) count++;
+          return ok;
         });
-
-        window.AppState.visibleMask = mask;
-        window.AppState.visibleCount = count;
         this.visibleCount = count;
-
-        if (window.AppState.onFilterChange) {
-          window.AppState.onFilterChange(mask);
-        }
+        window.AppState.visibleMask = mask;
+        if (window.AppState.onFilterChange) window.AppState.onFilterChange(mask);
       },
 
       resetFilters() {
         this.selectedPersonas = [true,true,true,true,true];
-        this.filters = { ageBand:"", incomeTier:"", region:"", engagementMin:0, engagementMax:1 };
+        this.filters = { ageBand:'', incomeTier:'', region:'', engMin:0, engMax:1 };
         this.applyFilters();
       },
     };
   }
 </script>
 
-<!-- ====================================================
-     THREE.JS SCENE
-===================================================== -->
+<!-- ── THREE.JS SCENE ── -->
 <script type="module">
   import * as THREE from 'three';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-  // ---- Config ----
-  const CLUSTER_COLORS = [0x2dd4bf, 0xf59e0b, 0x8b5cf6, 0xf87171, 0x38bdf8];
-  const CLUSTER_COLORS_HEX = ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"];
-  const POINT_SIZE   = 4.0;
-  const HIT_RADIUS   = 0.25;
+  const COLORS     = [0x2dd4bf, 0xf59e0b, 0x8b5cf6, 0xf87171, 0x38bdf8];
+  const COLORS_HEX = ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"];
+  const DEFAULT_CAM = { x:8, y:6, z:10 };
 
-  // ---- Scene setup ----
+  // ── Renderer ──
   const canvas    = document.getElementById('three-canvas');
   const container = document.getElementById('canvas-container');
-  const renderer  = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  const renderer  = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x0f0f0f, 1);
 
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
-  camera.position.set(8, 6, 10);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(DEFAULT_CAM.x, DEFAULT_CAM.y, DEFAULT_CAM.z);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
   controls.minDistance   = 2;
   controls.maxDistance   = 40;
-  controls.mouseButtons  = {
-    LEFT:   THREE.MOUSE.ROTATE,
-    MIDDLE: THREE.MOUSE.DOLLY,
-    RIGHT:  THREE.MOUSE.PAN,
-  };
+  controls.mouseButtons  = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
 
-  // ---- Resize ----
   function resize() {
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    renderer.setSize(w, h, false);
+    const w = container.clientWidth, h = container.clientHeight;
+    renderer.setSize(w, h, true); // true = update CSS style
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
   resize();
   window.addEventListener('resize', resize);
 
-  // ---- Grid / axes ----
-  const gridHelper = new THREE.GridHelper(12, 24, 0x222228, 0x1e1e24);
-  gridHelper.position.y = -5.2;
-  scene.add(gridHelper);
+  // Grid
+  const grid = new THREE.GridHelper(12, 24, 0x222228, 0x1e1e24);
+  grid.position.y = -5.5;
+  scene.add(grid);
 
-  const axesHelper = new THREE.AxesHelper(1.2);
-  axesHelper.position.set(-5.5, -5.2, -5.5);
-  // Dim axes
-  axesHelper.material = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35 });
-  scene.add(axesHelper);
-
-  // Subtle ambient + directional for depth feel (won't affect Points directly but helps scene)
-  scene.add(new THREE.AmbientLight(0xffffff, 0.15));
-
-  // ---- Custom shader material for per-point opacity ----
-  const vertexShader = `
+  // ── Shaders ──
+  const VS = `
     attribute float aOpacity;
     attribute vec3  aColor;
+    attribute float aHighlight;
     varying float   vOpacity;
     varying vec3    vColor;
-
+    varying float   vHighlight;
     void main() {
-      vOpacity = aOpacity;
-      vColor   = aColor;
-      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-      // Slight size attenuation for depth cue
-      gl_PointSize = ${POINT_SIZE.toFixed(1)} * (300.0 / -mvPos.z);
-      gl_PointSize = clamp(gl_PointSize, 1.5, 12.0);
-      gl_Position  = projectionMatrix * mvPos;
+      vOpacity   = aOpacity;
+      vColor     = aColor;
+      vHighlight = aHighlight;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      float sz = 4.5 * (300.0 / -mv.z);
+      sz = clamp(sz, 2.0, 14.0);
+      // Highlighted point is 2x larger
+      gl_PointSize = sz * (1.0 + aHighlight * 1.5);
+      gl_Position  = projectionMatrix * mv;
     }
   `;
-
-  const fragmentShader = `
+  const FS = `
     varying float vOpacity;
     varying vec3  vColor;
-
+    varying float vHighlight;
     void main() {
-      // Soft circle
       vec2 uv = gl_PointCoord - 0.5;
       float d = length(uv);
       if (d > 0.5) discard;
-      float alpha = smoothstep(0.5, 0.3, d) * vOpacity;
-      gl_FragColor = vec4(vColor, alpha);
+      // Highlighted: bright white ring effect
+      float glow = vHighlight * smoothstep(0.5, 0.35, d) * 0.6;
+      float core = smoothstep(0.5, 0.28, d) * vOpacity;
+      vec3  col  = mix(vColor, vec3(1.0), glow);
+      gl_FragColor = vec4(col, core + glow);
     }
   `;
 
-  // ---- Data & geometry ----
-  let pointsData  = [];
   let pointsMesh  = null;
-  let opacityAttr = null;   // typed array reference for GSAP tweens
-  let opacityObj  = {};     // GSAP proxy object for current values
+  let opacityAttr = null;
+  let highlightAttr = null;
+  let opacityObj  = {};
+  let currentData = [];
+  let hoveredIdx  = -1;
 
   function buildScene(data) {
-    pointsData = data;
+    currentData = data;
     const n = data.length;
-
-    const positions = new Float32Array(n * 3);
-    const colors    = new Float32Array(n * 3);
-    const opacities = new Float32Array(n).fill(1.0);
-
-    const color = new THREE.Color();
+    const pos  = new Float32Array(n * 3);
+    const cols = new Float32Array(n * 3);
+    const ops  = new Float32Array(n).fill(1);
+    const hl   = new Float32Array(n).fill(0);
+    const c    = new THREE.Color();
 
     data.forEach((pt, i) => {
-      positions[i*3]   = pt.x;
-      positions[i*3+1] = pt.y;
-      positions[i*3+2] = pt.z;
-
-      color.set(CLUSTER_COLORS[pt.cluster_id]);
-      colors[i*3]   = color.r;
-      colors[i*3+1] = color.g;
-      colors[i*3+2] = color.b;
+      pos[i*3]=pt.x; pos[i*3+1]=pt.y; pos[i*3+2]=pt.z;
+      c.set(COLORS[pt.cluster_id]);
+      cols[i*3]=c.r; cols[i*3+1]=c.g; cols[i*3+2]=c.b;
     });
 
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('aColor',   new THREE.BufferAttribute(colors, 3));
-    geo.setAttribute('aOpacity', new THREE.BufferAttribute(opacities, 1));
+    geo.setAttribute('position',  new THREE.BufferAttribute(pos,  3));
+    geo.setAttribute('aColor',    new THREE.BufferAttribute(cols, 3));
+    geo.setAttribute('aOpacity',  new THREE.BufferAttribute(ops,  1));
+    geo.setAttribute('aHighlight',new THREE.BufferAttribute(hl,   1));
 
     const mat = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      transparent: true,
-      depthWrite: false,
+      vertexShader: VS, fragmentShader: FS,
+      transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
 
     if (pointsMesh) scene.remove(pointsMesh);
-    pointsMesh  = new THREE.Points(geo, mat);
-    opacityAttr = geo.attributes.aOpacity;
+    pointsMesh    = new THREE.Points(geo, mat);
+    opacityAttr   = geo.attributes.aOpacity;
+    highlightAttr = geo.attributes.aHighlight;
     scene.add(pointsMesh);
 
-    // Init GSAP proxy values
+    opacityObj = {};
     for (let i = 0; i < n; i++) opacityObj[i] = 1.0;
   }
 
-  // ---- Filter handler (called by Alpine) ----
-  window.AppState.onFilterChange = function(mask) {
+  // ── Filter handler ──
+  window.AppState.onFilterChange = (mask) => {
     if (!pointsMesh) return;
-    const n = pointsData.length;
-
-    // Batch: collect current => target
+    const n = currentData.length;
     const targets = {};
-    for (let i = 0; i < n; i++) {
-      targets[i] = mask[i] ? 1.0 : 0.04;
-    }
-
+    for (let i = 0; i < n; i++) targets[i] = mask[i] ? 1.0 : 0.04;
     gsap.to(opacityObj, {
-      duration: 0.45,
-      ease: 'power2.out',
-      ...targets,
+      duration: 0.4, ease: 'power2.out', ...targets,
       onUpdate() {
-        for (let i = 0; i < n; i++) {
-          opacityAttr.array[i] = opacityObj[i];
-        }
+        for (let i = 0; i < n; i++) opacityAttr.array[i] = opacityObj[i];
         opacityAttr.needsUpdate = true;
       }
     });
   };
 
-  // ---- Raycaster ----
-  const raycaster  = new THREE.Raycaster();
-  const mouse      = new THREE.Vector2();
-  raycaster.params.Points.threshold = HIT_RADIUS;
+  // ── Dataset switch ──
+  window.AppState.onDatasetSwitch = (idx) => {
+    buildScene(window.DATASETS[idx].points);
+    closeDetail();
+    hoveredIdx = -1;
+    // Reset camera
+    gsap.to(camera.position, { x: DEFAULT_CAM.x, y: DEFAULT_CAM.y, z: DEFAULT_CAM.z,
+      duration: 0.8, ease: 'power2.inOut', onUpdate: () => controls.update() });
+    gsap.to(controls.target, { x:0, y:0, z:0, duration: 0.8, ease: 'power2.inOut',
+      onUpdate: () => controls.update() });
+  };
 
+  // ── Raycaster ──
+  const raycaster = new THREE.Raycaster();
+  raycaster.params.Points.threshold = 0.3;
+  const mouse      = new THREE.Vector2();
   const tooltip    = document.getElementById('tooltip');
   const ttPersona  = document.getElementById('tt-persona');
   const ttId       = document.getElementById('tt-id');
+  let mouseDownPos = {x:0, y:0};
 
-  let hoveredIdx   = -1;
-  let mouseDownPos = { x: 0, y: 0 };
+  function getMouseNDC(clientX, clientY) {
+    // Use canvas bounding rect for accurate mapping
+    const rect = renderer.domElement.getBoundingClientRect();
+    return {
+      x:  ((clientX - rect.left) / rect.width)  * 2 - 1,
+      y: -((clientY - rect.top)  / rect.height) * 2 + 1,
+    };
+  }
 
   renderer.domElement.addEventListener('mousemove', (e) => {
-    const rect = container.getBoundingClientRect();
-    mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-    mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
-
+    const ndc = getMouseNDC(e.clientX, e.clientY);
+    mouse.set(ndc.x, ndc.y);
     if (!pointsMesh) return;
+
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObject(pointsMesh);
 
+    // Clear old highlight
+    if (hoveredIdx >= 0 && highlightAttr) {
+      highlightAttr.array[hoveredIdx] = 0;
+      highlightAttr.needsUpdate = true;
+    }
+
     if (hits.length > 0) {
       const idx = hits[0].index;
-      const pt  = pointsData[idx];
       if (opacityObj[idx] > 0.1) {
         hoveredIdx = idx;
-        ttPersona.textContent  = pt.persona;
-        ttPersona.style.color  = CLUSTER_COLORS_HEX[pt.cluster_id];
-        ttId.textContent       = pt.id;
-        tooltip.style.display  = 'block';
-        tooltip.style.left     = (e.clientX - rect.left + 14) + 'px';
-        tooltip.style.top      = (e.clientY - rect.top  - 10) + 'px';
+        // Set highlight
+        highlightAttr.array[idx] = 1;
+        highlightAttr.needsUpdate = true;
+
+        const pt = currentData[idx];
+        ttPersona.textContent = pt.persona;
+        ttPersona.style.color = COLORS_HEX[pt.cluster_id];
+        ttId.textContent = pt.id;
+        const rect = renderer.domElement.getBoundingClientRect();
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX - rect.left + 14) + 'px';
+        tooltip.style.top  = (e.clientY - rect.top  - 10) + 'px';
         renderer.domElement.style.cursor = 'pointer';
         return;
       }
     }
+
     hoveredIdx = -1;
     tooltip.style.display = 'none';
     renderer.domElement.style.cursor = 'default';
   });
 
-  renderer.domElement.addEventListener('mousedown', (e) => {
-    mouseDownPos = { x: e.clientX, y: e.clientY };
-  });
+  renderer.domElement.addEventListener('mousedown', e => { mouseDownPos = {x:e.clientX, y:e.clientY}; });
 
-  renderer.domElement.addEventListener('click', (e) => {
-    // Ignore drag clicks
-    const dx = e.clientX - mouseDownPos.x;
-    const dy = e.clientY - mouseDownPos.y;
+  renderer.domElement.addEventListener('click', e => {
+    const dx = e.clientX - mouseDownPos.x, dy = e.clientY - mouseDownPos.y;
     if (Math.sqrt(dx*dx + dy*dy) > 4) return;
-
     if (hoveredIdx >= 0 && opacityObj[hoveredIdx] > 0.1) {
-      openDetailPanel(pointsData[hoveredIdx]);
+      openDetail(currentData[hoveredIdx]);
     } else {
-      closeDetailPanel();
+      closeDetail();
     }
   });
 
-  // ---- Detail panel ----
+  // ── Detail panel ──
   const detailPanel = document.getElementById('detail-panel');
-  const hudEl       = document.getElementById('camera-hud');
+  const hud         = document.getElementById('camera-hud');
 
-  function openDetailPanel(pt) {
-    document.getElementById('dp-persona').textContent   = pt.persona;
-    document.getElementById('dp-persona').style.color   = CLUSTER_COLORS_HEX[pt.cluster_id];
+  function openDetail(pt) {
+    const ds = window.DATASETS[window.AppState.activeDataset];
+    document.getElementById('dp-persona').textContent = pt.persona;
+    document.getElementById('dp-persona').style.color  = COLORS_HEX[pt.cluster_id];
     document.getElementById('dp-cluster-badge').textContent = `Cluster ${pt.cluster_id}`;
-    document.getElementById('dp-id').textContent        = pt.id;
-    document.getElementById('dp-age').textContent       = pt.features.age_band;
-    document.getElementById('dp-income').textContent    = pt.features.income_tier;
-    document.getElementById('dp-region').textContent    = pt.features.region;
-
+    document.getElementById('dp-method-badge').textContent  = `${ds.dim_reduction} · ${ds.clustering_method}`;
+    document.getElementById('dp-id').textContent      = pt.id;
+    document.getElementById('dp-age').textContent     = pt.features.age_band;
+    document.getElementById('dp-income').textContent  = pt.features.income_tier;
+    document.getElementById('dp-region').textContent  = pt.features.region;
     const eng = pt.features.engagement_score;
-    document.getElementById('dp-engagement-val').textContent = eng.toFixed(2);
-    const bar = document.getElementById('dp-engagement-bar');
+    document.getElementById('dp-eng-val').textContent = eng.toFixed(2);
+    const bar = document.getElementById('dp-eng-bar');
     bar.style.width      = (eng * 100) + '%';
-    bar.style.background = CLUSTER_COLORS_HEX[pt.cluster_id];
-
+    bar.style.background = COLORS_HEX[pt.cluster_id];
     document.getElementById('dp-x').textContent = pt.x.toFixed(3);
     document.getElementById('dp-y').textContent = pt.y.toFixed(3);
     document.getElementById('dp-z').textContent = pt.z.toFixed(3);
-
+    document.getElementById('dp-lat').textContent = pt.lat.toFixed(4) + '°';
+    document.getElementById('dp-lon').textContent = pt.lon.toFixed(4) + '°';
     detailPanel.classList.add('open');
-    hudEl.classList.add('panel-open');
+    hud.classList.add('panel-open');
   }
 
-  function closeDetailPanel() {
+  function closeDetail() {
     detailPanel.classList.remove('open');
-    hudEl.classList.remove('panel-open');
+    hud.classList.remove('panel-open');
   }
 
-  document.getElementById('detail-close-btn').addEventListener('click', closeDetailPanel);
+  document.getElementById('dp-close').addEventListener('click', closeDetail);
 
-  // ---- Camera HUD buttons ----
-  document.getElementById('btn-reset-view').addEventListener('click', () => {
-    gsap.to(camera.position, {
-      x: 8, y: 6, z: 10,
-      duration: 1.0,
-      ease: 'power3.inOut',
-      onUpdate: () => controls.update(),
-    });
-    gsap.to(controls.target, {
-      x: 0, y: 0, z: 0,
-      duration: 1.0,
-      ease: 'power3.inOut',
-      onUpdate: () => controls.update(),
-    });
+  // ── Camera HUD ──
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    gsap.to(camera.position, { x: DEFAULT_CAM.x, y: DEFAULT_CAM.y, z: DEFAULT_CAM.z,
+      duration: 1.0, ease: 'power3.inOut', onUpdate: () => controls.update() });
+    gsap.to(controls.target, { x:0, y:0, z:0, duration: 1.0, ease: 'power3.inOut',
+      onUpdate: () => controls.update() });
   });
 
-  document.getElementById('btn-zoom-in').addEventListener('click', () => {
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    gsap.to(camera.position, {
-      x: camera.position.x + dir.x * 2,
-      y: camera.position.y + dir.y * 2,
-      z: camera.position.z + dir.z * 2,
-      duration: 0.4,
-      ease: 'power2.out',
-      onUpdate: () => controls.update(),
-    });
+  document.getElementById('btn-zi').addEventListener('click', () => {
+    const d = new THREE.Vector3(); camera.getWorldDirection(d);
+    gsap.to(camera.position, { x: camera.position.x + d.x*2, y: camera.position.y + d.y*2,
+      z: camera.position.z + d.z*2, duration: 0.4, ease: 'power2.out',
+      onUpdate: () => controls.update() });
   });
 
-  document.getElementById('btn-zoom-out').addEventListener('click', () => {
-    const dir = new THREE.Vector3();
-    camera.getWorldDirection(dir);
-    gsap.to(camera.position, {
-      x: camera.position.x - dir.x * 2,
-      y: camera.position.y - dir.y * 2,
-      z: camera.position.z - dir.z * 2,
-      duration: 0.4,
-      ease: 'power2.out',
-      onUpdate: () => controls.update(),
-    });
+  document.getElementById('btn-zo').addEventListener('click', () => {
+    const d = new THREE.Vector3(); camera.getWorldDirection(d);
+    gsap.to(camera.position, { x: camera.position.x - d.x*2, y: camera.position.y - d.y*2,
+      z: camera.position.z - d.z*2, duration: 0.4, ease: 'power2.out',
+      onUpdate: () => controls.update() });
   });
 
-  // ---- Render loop ----
+  // ── Render loop ──
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
   }
 
-  // ---- Load data ----
-  fetch('data.json')
-    .then(r => r.json())
-    .then(data => {
-      window.AppState.data = data;
-      buildScene(data);
-
-      // Hide loading overlay
-      const loadingEl = document.getElementById('loading');
-      loadingEl.classList.add('hidden');
-      setTimeout(() => loadingEl.remove(), 500);
-
-      animate();
-    })
-    .catch(err => {
-      console.error('Failed to load data.json:', err);
-      document.querySelector('#loading p').textContent = 'Error loading data. Serve via HTTP.';
-    });
+  // ── Boot ──
+  buildScene(window.DATASETS[0].points);
+  document.getElementById('loading').classList.add('hidden');
+  setTimeout(() => document.getElementById('loading').remove(), 500);
+  animate();
 </script>
 
 </body>
