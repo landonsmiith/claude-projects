@@ -842,7 +842,7 @@ function OrbitControls(camera, el) {
   };
 
   // Raycaster
-  const ray=new THREE.Raycaster(); ray.params.Points.threshold=0.3;
+  const ray=new THREE.Raycaster(); ray.params.Points.threshold=0.5;
   const mouse=new THREE.Vector2();
   let mdPos={x:0,y:0};
 
@@ -853,7 +853,7 @@ function OrbitControls(camera, el) {
     ray.setFromCamera(mouse,camera);
     if (hovIdx>=0) { hlArr.array[hovIdx]=0; hlArr.needsUpdate=true; }
     const hits=ray.intersectObject(mesh);
-    if (hits.length && currentOp[hits[0].index]>0.1) {
+    if (hits.length && currentOp[hits[0].index]>0.05) {
       hovIdx=hits[0].index;
       hlArr.array[hovIdx]=1; hlArr.needsUpdate=true;
       const p=data[hovIdx], tip=document.getElementById('tip');
@@ -872,7 +872,7 @@ function OrbitControls(camera, el) {
   renderer.domElement.addEventListener('click', e=>{
     const dx=e.clientX-mdPos.x, dy=e.clientY-mdPos.y;
     if (dx*dx+dy*dy>16) return;
-    hovIdx>=0&&currentOp[hovIdx]>0.1 ? openDetail(data[hovIdx]) : closeDetail();
+    hovIdx>=0&&currentOp[hovIdx]>0.05 ? openDetail(data[hovIdx]) : closeDetail();
   });
 
   // Detail panel
@@ -941,14 +941,20 @@ function OrbitControls(camera, el) {
     pts().forEach((p,i)=>{
       const vis=!S.mask.length||S.mask[i];
       const m=L.circleMarker([p.lat,p.lon],{radius:5,fillColor:COLORS[p.cluster_id],
-        color:'#000',weight:.5,fillOpacity:vis?.85:.08,opacity:vis?1:.08})
+        color:'#000',weight:.5,fillOpacity:vis?.85:.08,opacity:vis?1:.08,interactive:vis})
         .addTo(leafMap)
         .bindTooltip(`<b style="color:${COLORS[p.cluster_id]}">${p.persona}</b><br/>${p.id}`,{sticky:true})
         .on('click',()=>openDetail(p));
+      if (m._path && !vis) m._path.style.pointerEvents = 'none';
       lMarkers.push(m);
     });
   }
-  window._mapUpdate  = mask => lMarkers.forEach((m,i)=>m.setStyle({fillOpacity:mask[i]?.85:.08,opacity:mask[i]?1:.08}));
+  window._mapUpdate  = mask => lMarkers.forEach((m,i)=>{
+    const vis=!!mask[i];
+    m.setStyle({fillOpacity:vis?.85:.08,opacity:vis?1:.08,interactive:vis});
+    // Leaflet only honours `interactive` on redraw; toggle pointer-events directly
+    if (m._path) m._path.style.pointerEvents = vis ? '' : 'none';
+  });
   window._mapRebuild = () => rebuildMarkers();
 
   btnMap.addEventListener('click', () => {
