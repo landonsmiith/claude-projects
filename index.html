@@ -7,6 +7,8 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="importmap">
   {
     "imports": {
@@ -18,7 +20,6 @@
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --bg:         #0f0f0f;
       --sidebar-bg: #161618;
@@ -29,243 +30,224 @@
       --dim:        #3f3f46;
       --sidebar-w:  288px;
       --detail-w:   310px;
-      --c0: #2dd4bf;
-      --c1: #f59e0b;
-      --c2: #8b5cf6;
-      --c3: #f87171;
-      --c4: #38bdf8;
+      --c0: #2dd4bf; --c1: #f59e0b; --c2: #8b5cf6; --c3: #f87171; --c4: #38bdf8;
     }
-
-    html, body { height: 100%; background: var(--bg); color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif; font-size: 13px; overflow: hidden; }
-
-    #app { display: flex; height: 100vh; width: 100vw; position: relative; }
+    html, body { height:100%; background:var(--bg); color:var(--text);
+      font-family:'Inter',system-ui,sans-serif; font-size:13px; overflow:hidden; }
+    #app { display:flex; height:100vh; width:100vw; position:relative; }
 
     /* ── Sidebar ── */
-    #sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--sidebar-bg);
-      border-right: 1px solid var(--border); display: flex; flex-direction: column;
-      overflow-y: auto; overflow-x: hidden; z-index: 10; }
-    #sidebar::-webkit-scrollbar { width: 4px; }
-    #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #sidebar { width:var(--sidebar-w); min-width:var(--sidebar-w); background:var(--sidebar-bg);
+      border-right:1px solid var(--border); display:flex; flex-direction:column;
+      overflow-y:auto; overflow-x:hidden; z-index:10; }
+    #sidebar::-webkit-scrollbar { width:4px; }
+    #sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 
-    .sb-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
-    .sb-header h1 { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
-    .sb-header p  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sb-header { padding:16px 16px 12px; border-bottom:1px solid var(--border); }
+    .sb-header h1 { font-size:14px; font-weight:700; letter-spacing:-.01em; }
+    .sb-header p  { font-size:11px; color:var(--muted); margin-top:2px; }
 
-    .sb-section { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-    .sec-label  { font-size: 10px; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .sb-section { padding:12px 16px; border-bottom:1px solid var(--border); }
+    .sec-label  { font-size:10px; font-weight:600; letter-spacing:.08em;
+      text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 
-    /* Dataset selector */
-    .dataset-card { background: rgba(99,102,241,.07); border: 1px solid rgba(99,102,241,.2);
-      border-radius: 8px; padding: 10px 12px; cursor: pointer; margin-bottom: 6px;
-      transition: background .15s, border-color .15s; }
-    .dataset-card:hover { background: rgba(99,102,241,.12); border-color: rgba(99,102,241,.4); }
-    .dataset-card.active { background: rgba(99,102,241,.15); border-color: #6366f1; }
-    .dataset-card .ds-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-    .dataset-card .ds-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-    .ds-tag { font-size: 10px; padding: 2px 6px; border-radius: 10px;
-      background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border); }
+    .dataset-card { background:rgba(99,102,241,.07); border:1px solid rgba(99,102,241,.2);
+      border-radius:8px; padding:10px 12px; cursor:pointer; margin-bottom:6px;
+      transition:background .15s,border-color .15s; }
+    .dataset-card:last-child { margin-bottom:0; }
+    .dataset-card:hover  { background:rgba(99,102,241,.12); border-color:rgba(99,102,241,.4); }
+    .dataset-card.active { background:rgba(99,102,241,.15); border-color:#6366f1; }
+    .ds-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .ds-tags { display:flex; gap:4px; flex-wrap:wrap; }
+    .ds-tag  { font-size:10px; padding:2px 6px; border-radius:10px;
+      background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--border); }
 
-    /* Persona toggles */
-    .persona-list { display: flex; flex-direction: column; gap: 4px; }
-    .persona-toggle { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
-      border-radius: 7px; cursor: pointer; border: 1px solid transparent;
-      transition: background .15s, border-color .15s; user-select: none; }
-    .persona-toggle:hover { background: rgba(255,255,255,.04); }
-    .persona-toggle.active { background: rgba(255,255,255,.06); border-color: var(--border); }
-    .persona-toggle input[type="checkbox"] { display: none; }
-    .persona-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; transition: opacity .15s; }
-    .persona-toggle:not(.active) .persona-dot { opacity: .3; }
-    .persona-name { font-size: 12px; font-weight: 500; flex: 1; }
-    .persona-count { font-size: 10px; color: var(--muted); background: rgba(255,255,255,.06);
-      padding: 1px 6px; border-radius: 9px; }
+    .persona-list { display:flex; flex-direction:column; gap:4px; }
+    .persona-toggle { display:flex; align-items:center; gap:8px; padding:6px 10px;
+      border-radius:7px; cursor:pointer; border:1px solid transparent;
+      transition:background .15s,border-color .15s; user-select:none; }
+    .persona-toggle:hover { background:rgba(255,255,255,.04); }
+    .persona-toggle.active { background:rgba(255,255,255,.06); border-color:var(--border); }
+    .persona-toggle input[type="checkbox"] { display:none; }
+    .persona-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; transition:opacity .15s; }
+    .persona-toggle:not(.active) .persona-dot { opacity:.3; }
+    .persona-name  { font-size:12px; font-weight:500; flex:1; }
+    .persona-count { font-size:10px; color:var(--muted); background:rgba(255,255,255,.06);
+      padding:1px 6px; border-radius:9px; }
 
-    /* Filters */
-    .filter-group { margin-bottom: 10px; }
-    .filter-group:last-child { margin-bottom: 0; }
-    .filter-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500;
-      display: flex; justify-content: space-between; align-items: center; }
-    .filter-select { width: 100%; background: rgba(255,255,255,.05); border: 1px solid var(--border);
-      color: var(--text); border-radius: 6px; padding: 6px 28px 6px 10px; font-size: 12px;
-      appearance: none; cursor: pointer; outline: none; transition: border-color .15s;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' viewBox='0 0 10 6'%3E%3Cpath stroke='%2371717a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 10px center; }
-    .filter-select:hover, .filter-select:focus { border-color: #3f3f46; }
-    .filter-select option { background: #1a1a1e; }
+    .filter-group { margin-bottom:10px; }
+    .filter-group:last-child { margin-bottom:0; }
+    .filter-label { font-size:11px; color:var(--muted); margin-bottom:5px; font-weight:500;
+      display:flex; justify-content:space-between; align-items:center; }
+    .filter-select { width:100%; background:rgba(255,255,255,.05); border:1px solid var(--border);
+      color:var(--text); border-radius:6px; padding:6px 28px 6px 10px; font-size:12px;
+      appearance:none; cursor:pointer; outline:none; transition:border-color .15s;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' viewBox='0 0 10 6'%3E%3Cpath stroke='%2371717a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 10px center; }
+    .filter-select:hover,.filter-select:focus { border-color:#3f3f46; }
+    .filter-select option { background:#1a1a1e; }
 
-    /* Range slider */
-    .range-row { display: flex; flex-direction: column; gap: 5px; }
-    .range-vals { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
-    .range-val { font-size: 11px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-    input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
-      border-radius: 2px; background: linear-gradient(to right,
-        #3f3f46 0%, #3f3f46 var(--min-pct,0%), #6366f1 var(--min-pct,0%),
-        #6366f1 var(--max-pct,100%), #3f3f46 var(--max-pct,100%), #3f3f46 100%);
-      cursor: pointer; outline: none; }
-    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px;
-      border-radius: 50%; background: #fff; border: 2px solid #6366f1; cursor: pointer; }
-    input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%;
-      background: #fff; border: 2px solid #6366f1; cursor: pointer; }
+    .range-row  { display:flex; flex-direction:column; gap:5px; }
+    .range-vals { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); }
+    .range-val  { font-size:11px; color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+    input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:4px;
+      border-radius:2px; background:linear-gradient(to right,
+        #3f3f46 0%,#3f3f46 var(--min-pct,0%),#6366f1 var(--min-pct,0%),
+        #6366f1 var(--max-pct,100%),#3f3f46 var(--max-pct,100%),#3f3f46 100%);
+      cursor:pointer; outline:none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px;
+      border-radius:50%; background:#fff; border:2px solid #6366f1; cursor:pointer; }
+    input[type="range"]::-moz-range-thumb { width:14px; height:14px; border-radius:50%;
+      background:#fff; border:2px solid #6366f1; cursor:pointer; }
+    .custom-btn { font-size:10px; color:#818cf8; cursor:pointer; background:none;
+      border:none; padding:0; text-decoration:underline; text-underline-offset:2px; }
+    .custom-btn:hover { color:#a5b4fc; }
 
-    .custom-range-btn { font-size: 10px; color: #818cf8; cursor: pointer; background: none;
-      border: none; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
-    .custom-range-btn:hover { color: #a5b4fc; }
+    .pts-count { display:flex; align-items:center; justify-content:space-between;
+      padding:9px 16px; border-bottom:1px solid var(--border); background:rgba(99,102,241,.04); }
+    .pts-count span { font-size:11px; color:var(--muted); }
+    .pts-count strong { font-size:12px; color:#818cf8; font-variant-numeric:tabular-nums; }
 
-    /* Points counter */
-    .pts-count { display: flex; align-items: center; justify-content: space-between;
-      padding: 9px 16px; border-bottom: 1px solid var(--border); background: rgba(99,102,241,.04); }
-    .pts-count span { font-size: 11px; color: var(--muted); }
-    .pts-count strong { font-size: 12px; color: #818cf8; font-variant-numeric: tabular-nums; }
+    .reset-btn { width:100%; padding:8px; background:rgba(255,255,255,.04);
+      border:1px solid var(--border); border-radius:7px; color:var(--muted);
+      font-size:12px; font-weight:500; cursor:pointer; transition:background .15s,color .15s; }
+    .reset-btn:hover { background:rgba(255,255,255,.08); color:var(--text); }
 
-    .reset-btn { width: 100%; padding: 8px; background: rgba(255,255,255,.04);
-      border: 1px solid var(--border); border-radius: 7px; color: var(--muted);
-      font-size: 12px; font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
-    .reset-btn:hover { background: rgba(255,255,255,.08); color: var(--text); }
+    .legend-list { display:flex; flex-direction:column; gap:7px; }
+    .legend-item { display:flex; align-items:center; gap:8px; }
+    .legend-swatch { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+    .legend-label { font-size:11px; color:var(--muted); }
 
-    /* Legend */
-    .legend-list { display: flex; flex-direction: column; gap: 7px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; }
-    .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-    .legend-label { font-size: 11px; color: var(--muted); }
+    /* ── Canvas area ── */
+    #canvas-container { flex:1; position:relative; overflow:hidden; }
+    #three-canvas { display:block; width:100%; height:100%; }
 
-    /* Logo area */
-    #logo-area { padding: 12px 16px; margin-top: auto; border-top: 1px solid var(--border);
-      background: #fff; display: flex; align-items: center; gap: 8px; }
-    #logo-area img { height: 28px; width: auto; display: block; }
-    .logo-fallback { display: flex; align-items: center; gap: 3px; }
-    .logo-n1 { width: 32px; height: 32px; background: #007CC2; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -1px; }
-    .logo-text { font-size: 18px; font-weight: 400; color: #6b7280; letter-spacing: -0.5px; }
+    /* Logo watermark — top-left of canvas */
+    #logo-watermark { position:absolute; top:14px; left:14px; z-index:20;
+      background:rgba(255,255,255,0.93); border-radius:8px; padding:5px 10px;
+      box-shadow:0 2px 12px rgba(0,0,0,.3); pointer-events:none; }
+    #logo-watermark img { height:22px; width:auto; display:block; }
 
-    /* ── Canvas ── */
-    #canvas-container { flex: 1; position: relative; overflow: hidden; }
-    #three-canvas { display: block; width: 100%; height: 100%; }
+    /* Map view */
+    #map-container { position:absolute; inset:0; z-index:5; display:none; }
+    #map-container.visible { display:block; }
+    #leaflet-map { width:100%; height:100%; }
 
     /* HUD */
-    #camera-hud { position: absolute; top: 16px; right: 16px; display: flex;
-      flex-direction: column; gap: 5px; z-index: 20; transition: right .28s cubic-bezier(.4,0,.2,1); }
-    #camera-hud.panel-open { right: calc(var(--detail-w) + 16px); }
-    .hud-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
-      background: rgba(22,22,24,.88); border: 1px solid var(--border); border-radius: 8px;
-      color: var(--muted); cursor: pointer; font-size: 15px; font-weight: 500; line-height: 1;
-      backdrop-filter: blur(6px); transition: background .15s, color .15s; user-select: none; }
-    .hud-btn:hover { background: rgba(40,40,45,.95); color: var(--text); border-color: #3f3f46; }
-    .hud-reset { width: auto; padding: 0 12px; font-size: 11px; font-weight: 600;
-      letter-spacing: .03em; gap: 5px; white-space: nowrap; }
+    #camera-hud { position:absolute; top:16px; right:16px; display:flex;
+      flex-direction:column; gap:5px; z-index:30;
+      transition:right .28s cubic-bezier(.4,0,.2,1); }
+    #camera-hud.panel-open { right:calc(var(--detail-w) + 16px); }
+    .hud-btn { display:flex; align-items:center; justify-content:center; width:32px; height:32px;
+      background:rgba(22,22,24,.88); border:1px solid var(--border); border-radius:8px;
+      color:var(--muted); cursor:pointer; font-size:15px; font-weight:500;
+      backdrop-filter:blur(6px); transition:background .15s,color .15s; user-select:none; }
+    .hud-btn:hover { background:rgba(40,40,45,.95); color:var(--text); border-color:#3f3f46; }
+    .hud-btn.active { background:rgba(99,102,241,.3); color:#a5b4fc; border-color:#6366f1; }
+    .hud-wide { width:auto; padding:0 12px; font-size:11px; font-weight:600;
+      letter-spacing:.03em; white-space:nowrap; }
 
     /* Tooltip */
-    #tooltip { position: absolute; pointer-events: none; background: rgba(22,22,24,.92);
-      border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px;
-      font-size: 11px; color: var(--text); backdrop-filter: blur(8px); z-index: 30;
-      display: none; max-width: 180px; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
-    .tt-persona { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
-    .tt-id { color: var(--muted); font-size: 10px; }
+    #tooltip { position:absolute; pointer-events:none; background:rgba(22,22,24,.92);
+      border:1px solid var(--border); border-radius:8px; padding:7px 11px;
+      font-size:11px; color:var(--text); backdrop-filter:blur(8px); z-index:30;
+      display:none; max-width:180px; box-shadow:0 4px 16px rgba(0,0,0,.4); }
+    .tt-persona { font-weight:600; font-size:12px; margin-bottom:2px; }
+    .tt-id { color:var(--muted); font-size:10px; }
 
     /* Detail panel */
-    #detail-panel { position: absolute; top: 0; right: 0; width: var(--detail-w); height: 100%;
-      background: var(--panel-bg); border-left: 1px solid var(--border);
-      transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1);
-      z-index: 25; display: flex; flex-direction: column; overflow-y: auto; }
-    #detail-panel.open { transform: translateX(0); }
-    #detail-panel::-webkit-scrollbar { width: 4px; }
-    #detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #detail-panel { position:absolute; top:0; right:0; width:var(--detail-w); height:100%;
+      background:var(--panel-bg); border-left:1px solid var(--border);
+      transform:translateX(100%); transition:transform .28s cubic-bezier(.4,0,.2,1);
+      z-index:25; display:flex; flex-direction:column; overflow-y:auto; }
+    #detail-panel.open { transform:translateX(0); }
+    #detail-panel::-webkit-scrollbar { width:4px; }
+    #detail-panel::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
 
-    .dp-header { padding: 16px; border-bottom: 1px solid var(--border); position: relative; }
-    .dp-close { position: absolute; top: 14px; right: 14px; width: 26px; height: 26px;
-      display: flex; align-items: center; justify-content: center; border-radius: 6px;
-      cursor: pointer; color: var(--muted); font-size: 16px; background: transparent;
-      border: none; transition: background .15s, color .15s; }
-    .dp-close:hover { background: rgba(255,255,255,.07); color: var(--text); }
-    .dp-persona-name { font-size: 18px; font-weight: 700; letter-spacing: -.02em;
-      margin-bottom: 8px; padding-right: 32px; line-height: 1.2; }
-    .dp-badges { display: flex; gap: 5px; flex-wrap: wrap; }
-    .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 20px;
-      font-size: 10px; font-weight: 600; letter-spacing: .04em; border: 1px solid; }
-    .badge-cluster { border-color: rgba(255,255,255,.15); color: var(--muted); background: rgba(255,255,255,.04); }
-    .badge-method  { border-color: rgba(99,102,241,.3); color: #818cf8; background: rgba(99,102,241,.08); }
+    .dp-header { padding:16px; border-bottom:1px solid var(--border); position:relative; }
+    .dp-close  { position:absolute; top:14px; right:14px; width:26px; height:26px;
+      display:flex; align-items:center; justify-content:center; border-radius:6px;
+      cursor:pointer; color:var(--muted); font-size:16px; background:transparent;
+      border:none; transition:background .15s,color .15s; }
+    .dp-close:hover { background:rgba(255,255,255,.07); color:var(--text); }
+    .dp-persona-name { font-size:18px; font-weight:700; letter-spacing:-.02em;
+      margin-bottom:8px; padding-right:32px; line-height:1.2; }
+    .dp-badges { display:flex; gap:5px; flex-wrap:wrap; }
+    .badge { display:inline-flex; align-items:center; padding:3px 8px; border-radius:20px;
+      font-size:10px; font-weight:600; letter-spacing:.04em; border:1px solid; }
+    .badge-cluster { border-color:rgba(255,255,255,.15); color:var(--muted); background:rgba(255,255,255,.04); }
+    .badge-method  { border-color:rgba(99,102,241,.3); color:#818cf8; background:rgba(99,102,241,.08); }
 
-    .dp-body { padding: 14px; flex: 1; }
-    .dp-id { font-size: 11px; color: var(--muted); background: rgba(255,255,255,.04);
-      border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; margin-bottom: 14px;
-      font-family: monospace; letter-spacing: .04em; }
-    .dp-id span { color: var(--dim); font-size: 10px; margin-right: 4px; }
-    .dp-divider { height: 1px; background: var(--border); margin: 12px 0; }
-    .dp-row { display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
-    .dp-row:last-child { border-bottom: none; }
-    .dp-row-label { font-size: 11px; color: var(--muted); font-weight: 500; }
-    .dp-row-value { font-size: 12px; color: var(--text); font-weight: 500; text-align: right; }
-    .eng-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 100px; }
-    .eng-bg { width: 100px; height: 5px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
-    .eng-fill { height: 100%; border-radius: 3px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+    .dp-body    { padding:14px; flex:1; }
+    .dp-id      { font-size:11px; color:var(--muted); background:rgba(255,255,255,.04);
+      border:1px solid var(--border); border-radius:6px; padding:7px 10px; margin-bottom:14px;
+      font-family:monospace; letter-spacing:.04em; }
+    .dp-id span { color:var(--dim); font-size:10px; margin-right:4px; }
+    .dp-divider { height:1px; background:var(--border); margin:12px 0; }
+    .dp-row     { display:flex; align-items:center; justify-content:space-between;
+      padding:7px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+    .dp-row:last-child { border-bottom:none; }
+    .dp-row-label { font-size:11px; color:var(--muted); font-weight:500; }
+    .dp-row-value { font-size:12px; color:var(--text); font-weight:500; text-align:right; }
+    .eng-wrap   { display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:100px; }
+    .eng-bg     { width:100px; height:5px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+    .eng-fill   { height:100%; border-radius:3px; transition:width .4s cubic-bezier(.4,0,.2,1); }
 
-    .dp-coords { background: rgba(255,255,255,.03); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px; margin-top: 12px; }
-    .dp-coords-title { font-size: 10px; color: var(--muted); font-weight: 600;
-      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
-    .dp-coords-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .coord-cell { display: flex; flex-direction: column; gap: 2px; }
-    .coord-axis { font-size: 9px; color: var(--dim); text-transform: uppercase; font-weight: 700; letter-spacing: .08em; }
-    .coord-val { font-size: 12px; color: var(--text); font-family: monospace; font-variant-numeric: tabular-nums; }
-
-    .dp-latlon { background: rgba(255,255,255,.03); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
-    .dp-latlon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dp-box { background:rgba(255,255,255,.03); border:1px solid var(--border);
+      border-radius:8px; padding:10px 12px; margin-top:10px; }
+    .dp-box-title { font-size:10px; color:var(--muted); font-weight:600;
+      letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; }
+    .dp-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .dp-grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+    .coord-cell { display:flex; flex-direction:column; gap:2px; }
+    .coord-axis { font-size:9px; color:var(--dim); text-transform:uppercase; font-weight:700; letter-spacing:.08em; }
+    .coord-val  { font-size:12px; color:var(--text); font-family:monospace; font-variant-numeric:tabular-nums; }
 
     /* Loading */
-    #loading { position: fixed; inset: 0; background: var(--bg); display: flex;
-      flex-direction: column; align-items: center; justify-content: center;
-      z-index: 100; gap: 14px; transition: opacity .4s; }
-    #loading.hidden { opacity: 0; pointer-events: none; }
-    .loader-ring { width: 36px; height: 36px; border: 2px solid var(--border);
-      border-top-color: #6366f1; border-radius: 50%; animation: spin .8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loading p { font-size: 13px; color: var(--muted); }
+    #loading { position:fixed; inset:0; background:var(--bg); display:flex;
+      flex-direction:column; align-items:center; justify-content:center;
+      z-index:100; gap:14px; transition:opacity .4s; }
+    #loading.hidden { opacity:0; pointer-events:none; }
+    .loader-ring { width:36px; height:36px; border:2px solid var(--border);
+      border-top-color:#6366f1; border-radius:50%; animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loading p { font-size:13px; color:var(--muted); }
 
     /* Custom range modal */
-    #range-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200;
-      display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    #range-modal.hidden { display: none; }
-    .modal-box { background: #1a1a1e; border: 1px solid var(--border); border-radius: 12px;
-      padding: 20px; width: 280px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-    .modal-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .modal-sub { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
-    .modal-row { display: flex; gap: 10px; margin-bottom: 14px; }
-    .modal-field { flex: 1; }
-    .modal-field label { font-size: 10px; color: var(--muted); font-weight: 600;
-      text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 5px; }
-    .modal-field input { width: 100%; background: rgba(255,255,255,.06); border: 1px solid var(--border);
-      border-radius: 6px; padding: 7px 10px; color: var(--text); font-size: 13px; outline: none; }
-    .modal-field input:focus { border-color: #6366f1; }
-    .modal-actions { display: flex; gap: 8px; }
-    .modal-cancel { flex: 1; padding: 8px; background: rgba(255,255,255,.04);
-      border: 1px solid var(--border); border-radius: 7px; color: var(--muted);
-      font-size: 12px; cursor: pointer; }
-    .modal-apply { flex: 1; padding: 8px; background: #6366f1; border: none;
-      border-radius: 7px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .modal-apply:hover { background: #4f46e5; }
+    #range-modal { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200;
+      display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+    #range-modal.hidden { display:none; }
+    .modal-box   { background:#1a1a1e; border:1px solid var(--border); border-radius:12px;
+      padding:20px; width:280px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+    .modal-title { font-size:14px; font-weight:600; margin-bottom:3px; }
+    .modal-sub   { font-size:11px; color:var(--muted); margin-bottom:14px; }
+    .modal-row   { display:flex; gap:10px; margin-bottom:14px; }
+    .modal-field { flex:1; }
+    .modal-field label { font-size:10px; color:var(--muted); font-weight:600;
+      text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:5px; }
+    .modal-field input { width:100%; background:rgba(255,255,255,.06); border:1px solid var(--border);
+      border-radius:6px; padding:7px 10px; color:var(--text); font-size:13px; outline:none; }
+    .modal-field input:focus { border-color:#6366f1; }
+    .modal-actions { display:flex; gap:8px; }
+    .modal-cancel { flex:1; padding:8px; background:rgba(255,255,255,.04);
+      border:1px solid var(--border); border-radius:7px; color:var(--muted); font-size:12px; cursor:pointer; }
+    .modal-apply  { flex:1; padding:8px; background:#6366f1; border:none;
+      border-radius:7px; color:#fff; font-size:12px; font-weight:600; cursor:pointer; }
+    .modal-apply:hover { background:#4f46e5; }
   </style>
 </head>
 <body>
 
 <div id="loading"><div class="loader-ring"></div><p>Initializing KINETIC Persona3D…</p></div>
 
-<!-- Custom range modal -->
+<!-- Custom range modal (generic) -->
 <div id="range-modal" class="hidden">
   <div class="modal-box">
     <div class="modal-title">Custom Range</div>
-    <div class="modal-sub" id="modal-field-name">Engagement Score (0 – 1)</div>
+    <div class="modal-sub" id="modal-subtitle"></div>
     <div class="modal-row">
-      <div class="modal-field">
-        <label>Min</label>
-        <input type="number" id="modal-min" step="0.01" min="0" max="1" />
-      </div>
-      <div class="modal-field">
-        <label>Max</label>
-        <input type="number" id="modal-max" step="0.01" min="0" max="1" />
-      </div>
+      <div class="modal-field"><label>Min</label><input type="number" id="modal-min" /></div>
+      <div class="modal-field"><label>Max</label><input type="number" id="modal-max" /></div>
     </div>
     <div class="modal-actions">
       <button class="modal-cancel" id="modal-cancel">Cancel</button>
@@ -323,15 +305,24 @@
     <div class="sb-section">
       <div class="sec-label">Feature Filters</div>
 
+      <!-- Age (continuous) -->
       <div class="filter-group">
-        <div class="filter-label">Age Band</div>
-        <select class="filter-select" x-model="filters.ageBand" @change="applyFilters()">
-          <option value="">All Ages</option>
-          <option>18-24</option><option>25-34</option><option>35-44</option>
-          <option>45-54</option><option>55+</option>
-        </select>
+        <div class="filter-label">
+          <span>Age &nbsp;<span class="range-val" x-text="filters.ageMin + ' – ' + filters.ageMax"></span></span>
+          <button class="custom-btn" @click="openModal('age')">custom</button>
+        </div>
+        <div class="range-row">
+          <input type="range" min="18" max="80" step="1" x-model.number="filters.ageMin"
+            @input="clamp('age','min'); applyFilters()"
+            :style="`--min-pct:${((filters.ageMin-18)/62*100).toFixed(1)}%;--max-pct:${((filters.ageMax-18)/62*100).toFixed(1)}%`" />
+          <input type="range" min="18" max="80" step="1" x-model.number="filters.ageMax"
+            @input="clamp('age','max'); applyFilters()"
+            :style="`--min-pct:${((filters.ageMin-18)/62*100).toFixed(1)}%;--max-pct:${((filters.ageMax-18)/62*100).toFixed(1)}%`" />
+          <div class="range-vals"><span>18</span><span>80</span></div>
+        </div>
       </div>
 
+      <!-- Income -->
       <div class="filter-group">
         <div class="filter-label">Income Tier</div>
         <select class="filter-select" x-model="filters.incomeTier" @change="applyFilters()">
@@ -340,6 +331,7 @@
         </select>
       </div>
 
+      <!-- Region -->
       <div class="filter-group">
         <div class="filter-label">Region</div>
         <select class="filter-select" x-model="filters.region" @change="applyFilters()">
@@ -349,18 +341,19 @@
         </select>
       </div>
 
+      <!-- Engagement (continuous) -->
       <div class="filter-group">
         <div class="filter-label">
-          <span>Engagement Score
-            <span class="range-val" x-text="' ' + filters.engMin.toFixed(2) + ' – ' + filters.engMax.toFixed(2)"></span>
-          </span>
-          <button class="custom-range-btn" @click="openRangeModal()">custom</button>
+          <span>Engagement &nbsp;<span class="range-val" x-text="filters.engMin.toFixed(2) + ' – ' + filters.engMax.toFixed(2)"></span></span>
+          <button class="custom-btn" @click="openModal('eng')">custom</button>
         </div>
         <div class="range-row">
           <input type="range" min="0" max="1" step="0.01" x-model.number="filters.engMin"
-            @input="clampMin(); applyFilters()" :style="rangeStyle()" />
+            @input="clamp('eng','min'); applyFilters()"
+            :style="`--min-pct:${(filters.engMin*100).toFixed(1)}%;--max-pct:${(filters.engMax*100).toFixed(1)}%`" />
           <input type="range" min="0" max="1" step="0.01" x-model.number="filters.engMax"
-            @input="clampMax(); applyFilters()" :style="rangeStyle()" />
+            @input="clamp('eng','max'); applyFilters()"
+            :style="`--min-pct:${(filters.engMin*100).toFixed(1)}%;--max-pct:${(filters.engMax*100).toFixed(1)}%`" />
           <div class="range-vals"><span>0.00</span><span>1.00</span></div>
         </div>
       </div>
@@ -390,30 +383,44 @@
       </div>
     </div>
 
-    <!-- Logo -->
-    <div id="logo-area">
-      <img src="https://i.8upload.com/image/a2a58006e20c9170/n1healthpng.png" alt="n1health" />
-    </div>
-
   </aside>
 
-  <!-- ── CANVAS ── -->
+  <!-- ── CANVAS AREA ── -->
   <div id="canvas-container">
     <canvas id="three-canvas"></canvas>
 
+    <!-- Map view overlay -->
+    <div id="map-container">
+      <div id="leaflet-map"></div>
+    </div>
+
+    <!-- Logo watermark -->
+    <div id="logo-watermark">
+      <img src="https://i.8upload.com/image/a2a58006e20c9170/n1healthpng.png" alt="n1health" />
+    </div>
+
+    <!-- HUD -->
     <div id="camera-hud">
-      <button class="hud-btn hud-reset" id="btn-reset">
+      <button class="hud-btn hud-wide" id="btn-reset">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-          <path d="M3 3v5h5"/>
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
         </svg>
         &nbsp;Reset View
+      </button>
+      <button class="hud-btn hud-wide" id="btn-map">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+        &nbsp;Map View
       </button>
       <button class="hud-btn" id="btn-zi">+</button>
       <button class="hud-btn" id="btn-zo">&minus;</button>
     </div>
 
+    <!-- Tooltip -->
     <div id="tooltip">
       <div class="tt-persona" id="tt-persona"></div>
       <div class="tt-id" id="tt-id"></div>
@@ -433,7 +440,7 @@
     <div class="dp-body">
       <div class="dp-id"><span>ID</span><span id="dp-id"></span></div>
       <div class="dp-divider"></div>
-      <div class="dp-row"><span class="dp-row-label">Age Band</span>   <span class="dp-row-value" id="dp-age"></span></div>
+      <div class="dp-row"><span class="dp-row-label">Age</span>        <span class="dp-row-value" id="dp-age"></span></div>
       <div class="dp-row"><span class="dp-row-label">Income Tier</span><span class="dp-row-value" id="dp-income"></span></div>
       <div class="dp-row"><span class="dp-row-label">Region</span>     <span class="dp-row-value" id="dp-region"></span></div>
       <div class="dp-row" style="align-items:flex-start;padding-top:9px">
@@ -443,21 +450,19 @@
           <div class="eng-bg"><div class="eng-fill" id="dp-eng-bar"></div></div>
         </div>
       </div>
-
-      <div class="dp-coords">
-        <div class="dp-coords-title">3D Embedding Coords</div>
-        <div class="dp-coords-grid">
+      <div class="dp-box">
+        <div class="dp-box-title">3D Embedding Coords</div>
+        <div class="dp-grid3">
           <div class="coord-cell"><span class="coord-axis">X</span><span class="coord-val" id="dp-x"></span></div>
           <div class="coord-cell"><span class="coord-axis">Y</span><span class="coord-val" id="dp-y"></span></div>
           <div class="coord-cell"><span class="coord-axis">Z</span><span class="coord-val" id="dp-z"></span></div>
         </div>
       </div>
-
-      <div class="dp-latlon">
-        <div class="dp-coords-title">Geographic Location</div>
-        <div class="dp-latlon-grid">
-          <div class="coord-cell"><span class="coord-axis">Lat</span><span class="coord-val" id="dp-lat"></span></div>
-          <div class="coord-cell"><span class="coord-axis">Lon</span><span class="coord-val" id="dp-lon"></span></div>
+      <div class="dp-box">
+        <div class="dp-box-title">Geographic Location</div>
+        <div class="dp-grid2">
+          <div class="coord-cell"><span class="coord-axis">Latitude</span> <span class="coord-val" id="dp-lat"></span></div>
+          <div class="coord-cell"><span class="coord-axis">Longitude</span><span class="coord-val" id="dp-lon"></span></div>
         </div>
       </div>
     </div>
@@ -465,9 +470,8 @@
 
 </div>
 
-<!-- ── DATA GENERATION ── -->
+<!-- ── DATA ── -->
 <script>
-  // Seeded PRNG (mulberry32) for reproducible fake data
   function makeRng(seed) {
     let s = seed >>> 0;
     return () => { s |= 0; s = s + 0x6D2B79F5 | 0;
@@ -475,69 +479,58 @@
       t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
       return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   }
-
   function gauss(rng) {
-    const u = 1 - rng(), v = rng();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    return Math.sqrt(-2*Math.log(1-rng()+1e-9)) * Math.cos(2*Math.PI*rng());
   }
 
-  const PERSONAS   = ["Wellness Seeker","Budget Conscious","Tech Adopter","Family Focused","Loyal Advocate"];
-  const AGE_BANDS  = ["18-24","25-34","35-44","45-54","55+"];
-  const INCOMES    = ["Low","Mid","High"];
-  const REGIONS    = ["Northeast","Southeast","Midwest","West"];
-
-  // cluster centers for each dataset (different spatial layouts)
-  const CENTERS = [
-    [[-3,2,-2],[3,2,3],[-2,-3,3],[3,-2,-3],[0,1,0]],      // DS1
-    [[-4,-1,1],[2,4,-1],[-1,2,4],[4,-3,2],[-2,-4,-2]],    // DS2
-    [[1,-4,3],[-3,3,-3],[4,1,-2],[-1,-2,4],[2,3,2]],      // DS3
+  const PERSONAS  = ["Wellness Seeker","Budget Conscious","Tech Adopter","Family Focused","Loyal Advocate"];
+  const AGE_BANDS = [["18-24",18,24],["25-34",25,34],["35-44",35,44],["45-54",45,54],["55+",55,80]];
+  const INCOMES   = ["Low","Mid","High"];
+  const REGIONS   = ["Northeast","Southeast","Midwest","West"];
+  const LAT_LON   = { Northeast:[[40,46],[-75,-67]], Southeast:[[25,36],[-90,-75]],
+                      Midwest:[[36,47],[-97,-83]],   West:[[32,49],[-125,-110]] };
+  const CENTERS   = [
+    [[-3,2,-2],[3,2,3],[-2,-3,3],[3,-2,-3],[0,1,0]],
+    [[-4,-1,1],[2,4,-1],[-1,2,4],[4,-3,2],[-2,-4,-2]],
+    [[1,-4,3],[-3,3,-3],[4,1,-2],[-1,-2,4],[2,3,2]],
   ];
 
-  // US lat/lon bounds per region
-  const LAT_LON = {
-    Northeast: [[40,46],[-75,-67]],
-    Southeast: [[25,36],[-90,-75]],
-    Midwest:   [[36,47],[-97,-83]],
-    West:      [[32,49],[-125,-110]],
-  };
-
-  function genDataset(seed, centerSet, dimReduction, clusteringMethod, name) {
+  function genDataset(seed, ci, dimR, clusterM, name) {
     const rng = makeRng(seed);
-    const points = [];
+    const pts = [];
     for (let cid = 0; cid < 5; cid++) {
-      const [cx, cy, cz] = centerSet[cid];
+      const [cx,cy,cz] = CENTERS[ci][cid];
       for (let j = 0; j < 100; j++) {
-        const region = REGIONS[Math.floor(rng() * 4)];
-        const [latR, lonR] = LAT_LON[region];
-        const id = `rec_${String(cid * 100 + j).padStart(3,'0')}`;
-        points.push({
-          id, cluster_id: cid, persona: PERSONAS[cid],
-          x: Math.max(-5, Math.min(5, cx + gauss(rng) * 0.9)),
-          y: Math.max(-5, Math.min(5, cy + gauss(rng) * 0.9)),
-          z: Math.max(-5, Math.min(5, cz + gauss(rng) * 0.9)),
-          lat: +(latR[0] + rng() * (latR[1] - latR[0])).toFixed(4),
-          lon: +(lonR[0] + rng() * (lonR[1] - lonR[0])).toFixed(4),
+        const region = REGIONS[Math.floor(rng()*4)];
+        const [latR,lonR] = LAT_LON[region];
+        const [band,ageMin,ageMax] = AGE_BANDS[Math.floor(rng()*5)];
+        const age = Math.floor(ageMin + rng()*(ageMax-ageMin+1));
+        pts.push({
+          id: `rec_${String(cid*100+j).padStart(3,'0')}`,
+          cluster_id: cid, persona: PERSONAS[cid],
+          x: Math.max(-5,Math.min(5,cx+gauss(rng)*0.9)),
+          y: Math.max(-5,Math.min(5,cy+gauss(rng)*0.9)),
+          z: Math.max(-5,Math.min(5,cz+gauss(rng)*0.9)),
+          lat: +(latR[0]+rng()*(latR[1]-latR[0])).toFixed(4),
+          lon: +(lonR[0]+rng()*(lonR[1]-lonR[0])).toFixed(4),
+          age,
           features: {
-            age_band:         AGE_BANDS[Math.floor(rng() * 5)],
-            income_tier:      INCOMES[Math.floor(rng() * 3)],
-            engagement_score: +rng().toFixed(2),
-            region,
+            age_band: band, income_tier: INCOMES[Math.floor(rng()*3)],
+            engagement_score: +rng().toFixed(2), region,
           }
         });
       }
     }
-    // shuffle
-    for (let i = points.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [points[i], points[j]] = [points[j], points[i]];
+    for (let i=pts.length-1;i>0;i--) {
+      const j=Math.floor(rng()*(i+1));[pts[i],pts[j]]=[pts[j],pts[i]];
     }
-    return { name, dim_reduction: dimReduction, clustering_method: clusteringMethod, points };
+    return { name, dim_reduction:dimR, clustering_method:clusterM, points:pts };
   }
 
   window.DATASETS = [
-    genDataset(42,  CENTERS[0], 'UMAP',  'K-Means',          'Consumer Segment Q1'),
-    genDataset(137, CENTERS[1], 'PCA',   'DBSCAN',           'Behavioral Health Q2'),
-    genDataset(999, CENTERS[2], 't-SNE', 'Gaussian Mixture',  'Digital Engagement Q3'),
+    genDataset(42,  0, 'UMAP',  'K-Means',         'Consumer Segment Q1'),
+    genDataset(137, 1, 'PCA',   'DBSCAN',          'Behavioral Health Q2'),
+    genDataset(999, 2, 't-SNE', 'Gaussian Mixture', 'Digital Engagement Q3'),
   ];
 
   window.AppState = {
@@ -548,33 +541,30 @@
   };
 </script>
 
-<!-- ── ALPINE COMPONENT ── -->
+<!-- ── ALPINE ── -->
 <script>
   function sidebarApp() {
     return {
-      datasets:        window.DATASETS,
-      activeDataset:   0,
-      personas:        PERSONAS,
-      clusterColors:   ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"],
-      selectedPersonas:[true,true,true,true,true],
-      clusterCounts:   [0,0,0,0,0],
-      visibleCount:    0,
-      totalCount:      0,
-      filters: { ageBand:'', incomeTier:'', region:'', engMin:0, engMax:1 },
+      datasets:         window.DATASETS,
+      activeDataset:    0,
+      personas:         PERSONAS,
+      clusterColors:    ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"],
+      selectedPersonas: [true,true,true,true,true],
+      clusterCounts:    [0,0,0,0,0],
+      visibleCount:     0,
+      totalCount:       0,
+      filters: { ageMin:18, ageMax:80, incomeTier:'', region:'', engMin:0, engMax:1 },
 
       get currentDataset() { return this.datasets[this.activeDataset]; },
-      get allSelected()    { return this.selectedPersonas.every(v => v); },
+      get allSelected()    { return this.selectedPersonas.every(v=>v); },
 
-      init() {
-        this.rebuildCounts();
-        this.applyFilters();
-      },
+      init() { this.rebuildCounts(); this.applyFilters(); },
 
       rebuildCounts() {
         const pts = this.datasets[this.activeDataset].points;
-        const counts = [0,0,0,0,0];
-        pts.forEach(p => counts[p.cluster_id]++);
-        this.clusterCounts = [...counts];
+        const c = [0,0,0,0,0];
+        pts.forEach(p => c[p.cluster_id]++);
+        this.clusterCounts = [...c];
         this.totalCount = pts.length;
       },
 
@@ -582,7 +572,7 @@
         this.activeDataset = i;
         window.AppState.activeDataset = i;
         this.selectedPersonas = [true,true,true,true,true];
-        this.filters = { ageBand:'', incomeTier:'', region:'', engMin:0, engMax:1 };
+        this.filters = { ageMin:18, ageMax:80, incomeTier:'', region:'', engMin:0, engMax:1 };
         this.rebuildCounts();
         this.applyFilters();
         if (window.AppState.onDatasetSwitch) window.AppState.onDatasetSwitch(i);
@@ -590,41 +580,51 @@
 
       toggleAll() {
         const next = !this.allSelected;
-        this.selectedPersonas = [true,true,true,true,true].map(() => next ? true : false);
-        if (!next) this.selectedPersonas = [true,true,true,true,true];
+        this.selectedPersonas = [true,true,true,true,true].map(()=>next||true);
+        if (!next) this.selectedPersonas=[true,true,true,true,true];
         this.applyFilters();
       },
+      togglePersona(i) { this.selectedPersonas[i]=!this.selectedPersonas[i]; this.applyFilters(); },
 
-      togglePersona(i) {
-        this.selectedPersonas[i] = !this.selectedPersonas[i];
-        this.applyFilters();
+      clamp(field, side) {
+        if (field==='age') {
+          if (side==='min' && this.filters.ageMin>this.filters.ageMax) this.filters.ageMin=this.filters.ageMax;
+          if (side==='max' && this.filters.ageMax<this.filters.ageMin) this.filters.ageMax=this.filters.ageMin;
+        } else {
+          if (side==='min' && this.filters.engMin>this.filters.engMax) this.filters.engMin=this.filters.engMax;
+          if (side==='max' && this.filters.engMax<this.filters.engMin) this.filters.engMax=this.filters.engMin;
+        }
       },
 
-      clampMin() { if (this.filters.engMin > this.filters.engMax) this.filters.engMin = this.filters.engMax; },
-      clampMax() { if (this.filters.engMax < this.filters.engMin) this.filters.engMax = this.filters.engMin; },
-
-      rangeStyle() {
-        return `--min-pct:${(this.filters.engMin*100).toFixed(1)}%;--max-pct:${(this.filters.engMax*100).toFixed(1)}%`;
-      },
-
-      openRangeModal() {
-        document.getElementById('modal-min').value = this.filters.engMin.toFixed(2);
-        document.getElementById('modal-max').value = this.filters.engMax.toFixed(2);
-        document.getElementById('range-modal').classList.remove('hidden');
+      openModal(field) {
+        const modal = document.getElementById('range-modal');
+        const isAge = field==='age';
+        document.getElementById('modal-subtitle').textContent =
+          isAge ? 'Age (18 – 80)' : 'Engagement Score (0.00 – 1.00)';
+        document.getElementById('modal-min').value = isAge ? this.filters.ageMin : this.filters.engMin.toFixed(2);
+        document.getElementById('modal-max').value = isAge ? this.filters.ageMax : this.filters.engMax.toFixed(2);
+        document.getElementById('modal-min').step  = isAge ? '1' : '0.01';
+        document.getElementById('modal-max').step  = isAge ? '1' : '0.01';
+        modal.classList.remove('hidden');
         const self = this;
         document.getElementById('modal-apply').onclick = () => {
           let mn = parseFloat(document.getElementById('modal-min').value);
           let mx = parseFloat(document.getElementById('modal-max').value);
-          mn = Math.max(0, Math.min(1, isNaN(mn) ? 0 : mn));
-          mx = Math.max(0, Math.min(1, isNaN(mx) ? 1 : mx));
-          if (mn > mx) [mn, mx] = [mx, mn];
-          self.filters.engMin = mn;
-          self.filters.engMax = mx;
+          if (isAge) {
+            mn = Math.max(18,Math.min(80,isNaN(mn)?18:Math.round(mn)));
+            mx = Math.max(18,Math.min(80,isNaN(mx)?80:Math.round(mx)));
+            if (mn>mx)[mn,mx]=[mx,mn];
+            self.filters.ageMin=mn; self.filters.ageMax=mx;
+          } else {
+            mn = Math.max(0,Math.min(1,isNaN(mn)?0:mn));
+            mx = Math.max(0,Math.min(1,isNaN(mx)?1:mx));
+            if (mn>mx)[mn,mx]=[mx,mn];
+            self.filters.engMin=mn; self.filters.engMax=mx;
+          }
           self.applyFilters();
-          document.getElementById('range-modal').classList.add('hidden');
+          modal.classList.add('hidden');
         };
-        document.getElementById('modal-cancel').onclick = () =>
-          document.getElementById('range-modal').classList.add('hidden');
+        document.getElementById('modal-cancel').onclick = () => modal.classList.add('hidden');
       },
 
       applyFilters() {
@@ -633,9 +633,9 @@
         const mask = pts.map(pt => {
           const ok =
             this.selectedPersonas[pt.cluster_id] &&
-            (!this.filters.ageBand    || pt.features.age_band    === this.filters.ageBand) &&
-            (!this.filters.incomeTier || pt.features.income_tier === this.filters.incomeTier) &&
-            (!this.filters.region     || pt.features.region      === this.filters.region) &&
+            pt.age >= this.filters.ageMin && pt.age <= this.filters.ageMax &&
+            (!this.filters.incomeTier || pt.features.income_tier===this.filters.incomeTier) &&
+            (!this.filters.region     || pt.features.region===this.filters.region) &&
             pt.features.engagement_score >= this.filters.engMin &&
             pt.features.engagement_score <= this.filters.engMax;
           if (ok) count++;
@@ -647,301 +647,256 @@
       },
 
       resetFilters() {
-        this.selectedPersonas = [true,true,true,true,true];
-        this.filters = { ageBand:'', incomeTier:'', region:'', engMin:0, engMax:1 };
+        this.selectedPersonas=[true,true,true,true,true];
+        this.filters={ageMin:18,ageMax:80,incomeTier:'',region:'',engMin:0,engMax:1};
         this.applyFilters();
       },
     };
   }
 </script>
 
-<!-- ── THREE.JS SCENE ── -->
+<!-- ── THREE.JS ── -->
 <script type="module">
   import * as THREE from 'three';
   import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-  const COLORS     = [0x2dd4bf, 0xf59e0b, 0x8b5cf6, 0xf87171, 0x38bdf8];
+  const COLORS     = [0x2dd4bf,0xf59e0b,0x8b5cf6,0xf87171,0x38bdf8];
   const COLORS_HEX = ["#2dd4bf","#f59e0b","#8b5cf6","#f87171","#38bdf8"];
-  const DEFAULT_CAM = { x:8, y:6, z:10 };
+  const DEF_CAM    = {x:8,y:6,z:10};
 
-  // ── Renderer ──
   const canvas    = document.getElementById('three-canvas');
   const container = document.getElementById('canvas-container');
-  const renderer  = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x0f0f0f, 1);
+  const renderer  = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x0f0f0f,1);
 
-  const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
-  camera.position.set(DEFAULT_CAM.x, DEFAULT_CAM.y, DEFAULT_CAM.z);
+  const scene   = new THREE.Scene();
+  const camera  = new THREE.PerspectiveCamera(55,1,0.01,1000);
+  camera.position.set(DEF_CAM.x,DEF_CAM.y,DEF_CAM.z);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.minDistance   = 2;
-  controls.maxDistance   = 40;
-  controls.mouseButtons  = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+  controls.enableDamping=true; controls.dampingFactor=0.06;
+  controls.minDistance=2; controls.maxDistance=40;
+  controls.mouseButtons={LEFT:THREE.MOUSE.ROTATE,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.PAN};
 
   function resize() {
-    const w = container.clientWidth, h = container.clientHeight;
-    renderer.setSize(w, h, true); // true = update CSS style
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    const w=container.clientWidth, h=container.clientHeight;
+    renderer.setSize(w,h,true);
+    camera.aspect=w/h; camera.updateProjectionMatrix();
   }
   resize();
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize',resize);
 
-  // Grid
-  const grid = new THREE.GridHelper(12, 24, 0x222228, 0x1e1e24);
-  grid.position.y = -5.5;
-  scene.add(grid);
+  scene.add(Object.assign(new THREE.GridHelper(12,24,0x222228,0x1e1e24),{position:{x:0,y:-5.5,z:0}}));
 
-  // ── Shaders ──
-  const VS = `
-    attribute float aOpacity;
-    attribute vec3  aColor;
-    attribute float aHighlight;
-    varying float   vOpacity;
-    varying vec3    vColor;
-    varying float   vHighlight;
-    void main() {
-      vOpacity   = aOpacity;
-      vColor     = aColor;
-      vHighlight = aHighlight;
-      vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      float sz = 4.5 * (300.0 / -mv.z);
-      sz = clamp(sz, 2.0, 14.0);
-      // Highlighted point is 2x larger
-      gl_PointSize = sz * (1.0 + aHighlight * 1.5);
-      gl_Position  = projectionMatrix * mv;
-    }
-  `;
-  const FS = `
-    varying float vOpacity;
-    varying vec3  vColor;
-    varying float vHighlight;
-    void main() {
-      vec2 uv = gl_PointCoord - 0.5;
-      float d = length(uv);
-      if (d > 0.5) discard;
-      // Highlighted: bright white ring effect
-      float glow = vHighlight * smoothstep(0.5, 0.35, d) * 0.6;
-      float core = smoothstep(0.5, 0.28, d) * vOpacity;
-      vec3  col  = mix(vColor, vec3(1.0), glow);
-      gl_FragColor = vec4(col, core + glow);
-    }
-  `;
+  const VS=`
+    attribute float aOpacity; attribute vec3 aColor; attribute float aHL;
+    varying float vOpacity; varying vec3 vColor; varying float vHL;
+    void main(){
+      vOpacity=aOpacity; vColor=aColor; vHL=aHL;
+      vec4 mv=modelViewMatrix*vec4(position,1.0);
+      float sz=clamp(4.5*(300.0/-mv.z),2.0,14.0)*(1.0+aHL*1.6);
+      gl_PointSize=sz; gl_Position=projectionMatrix*mv;
+    }`;
+  const FS=`
+    varying float vOpacity; varying vec3 vColor; varying float vHL;
+    void main(){
+      vec2 uv=gl_PointCoord-0.5; float d=length(uv);
+      if(d>0.5)discard;
+      float glow=vHL*smoothstep(0.5,0.35,d)*0.7;
+      float core=smoothstep(0.5,0.28,d)*vOpacity;
+      gl_FragColor=vec4(mix(vColor,vec3(1.0),glow),core+glow);
+    }`;
 
-  let pointsMesh  = null;
-  let opacityAttr = null;
-  let highlightAttr = null;
-  let opacityObj  = {};
-  let currentData = [];
-  let hoveredIdx  = -1;
+  let mesh=null, opAttr=null, hlAttr=null, opObj={}, data=[], hovIdx=-1;
 
-  function buildScene(data) {
-    currentData = data;
-    const n = data.length;
-    const pos  = new Float32Array(n * 3);
-    const cols = new Float32Array(n * 3);
-    const ops  = new Float32Array(n).fill(1);
-    const hl   = new Float32Array(n).fill(0);
-    const c    = new THREE.Color();
-
-    data.forEach((pt, i) => {
-      pos[i*3]=pt.x; pos[i*3+1]=pt.y; pos[i*3+2]=pt.z;
-      c.set(COLORS[pt.cluster_id]);
-      cols[i*3]=c.r; cols[i*3+1]=c.g; cols[i*3+2]=c.b;
+  function buildScene(pts) {
+    data=pts; const n=pts.length;
+    const pos=new Float32Array(n*3), col=new Float32Array(n*3),
+          ops=new Float32Array(n).fill(1), hl=new Float32Array(n).fill(0);
+    const c=new THREE.Color();
+    pts.forEach((p,i)=>{
+      pos[i*3]=p.x; pos[i*3+1]=p.y; pos[i*3+2]=p.z;
+      c.set(COLORS[p.cluster_id]);
+      col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
     });
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position',  new THREE.BufferAttribute(pos,  3));
-    geo.setAttribute('aColor',    new THREE.BufferAttribute(cols, 3));
-    geo.setAttribute('aOpacity',  new THREE.BufferAttribute(ops,  1));
-    geo.setAttribute('aHighlight',new THREE.BufferAttribute(hl,   1));
-
-    const mat = new THREE.ShaderMaterial({
-      vertexShader: VS, fragmentShader: FS,
-      transparent: true, depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-
-    if (pointsMesh) scene.remove(pointsMesh);
-    pointsMesh    = new THREE.Points(geo, mat);
-    opacityAttr   = geo.attributes.aOpacity;
-    highlightAttr = geo.attributes.aHighlight;
-    scene.add(pointsMesh);
-
-    opacityObj = {};
-    for (let i = 0; i < n; i++) opacityObj[i] = 1.0;
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('aColor',   new THREE.BufferAttribute(col,3));
+    geo.setAttribute('aOpacity', new THREE.BufferAttribute(ops,1));
+    geo.setAttribute('aHL',      new THREE.BufferAttribute(hl,1));
+    const mat=new THREE.ShaderMaterial({vertexShader:VS,fragmentShader:FS,
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending});
+    if(mesh) scene.remove(mesh);
+    mesh=new THREE.Points(geo,mat);
+    opAttr=geo.attributes.aOpacity; hlAttr=geo.attributes.aHL;
+    scene.add(mesh);
+    opObj={}; for(let i=0;i<n;i++) opObj[i]=1.0;
   }
 
-  // ── Filter handler ──
-  window.AppState.onFilterChange = (mask) => {
-    if (!pointsMesh) return;
-    const n = currentData.length;
-    const targets = {};
-    for (let i = 0; i < n; i++) targets[i] = mask[i] ? 1.0 : 0.04;
-    gsap.to(opacityObj, {
-      duration: 0.4, ease: 'power2.out', ...targets,
-      onUpdate() {
-        for (let i = 0; i < n; i++) opacityAttr.array[i] = opacityObj[i];
-        opacityAttr.needsUpdate = true;
-      }
-    });
+  window.AppState.onFilterChange=(mask)=>{
+    if(!mesh) return;
+    const n=data.length, targets={};
+    for(let i=0;i<n;i++) targets[i]=mask[i]?1.0:0.04;
+    gsap.to(opObj,{duration:0.4,ease:'power2.out',...targets,
+      onUpdate(){ for(let i=0;i<n;i++) opAttr.array[i]=opObj[i]; opAttr.needsUpdate=true; }});
+    // update map markers if map is open
+    if(window._mapUpdateFn) window._mapUpdateFn(mask);
   };
 
-  // ── Dataset switch ──
-  window.AppState.onDatasetSwitch = (idx) => {
+  window.AppState.onDatasetSwitch=(idx)=>{
     buildScene(window.DATASETS[idx].points);
-    closeDetail();
-    hoveredIdx = -1;
-    // Reset camera
-    gsap.to(camera.position, { x: DEFAULT_CAM.x, y: DEFAULT_CAM.y, z: DEFAULT_CAM.z,
-      duration: 0.8, ease: 'power2.inOut', onUpdate: () => controls.update() });
-    gsap.to(controls.target, { x:0, y:0, z:0, duration: 0.8, ease: 'power2.inOut',
-      onUpdate: () => controls.update() });
+    closeDetail(); hovIdx=-1;
+    gsap.to(camera.position,{...DEF_CAM,duration:0.8,ease:'power2.inOut',onUpdate:()=>controls.update()});
+    gsap.to(controls.target,{x:0,y:0,z:0,duration:0.8,ease:'power2.inOut',onUpdate:()=>controls.update()});
+    if(window._mapRebuildFn) window._mapRebuildFn();
   };
 
   // ── Raycaster ──
-  const raycaster = new THREE.Raycaster();
-  raycaster.params.Points.threshold = 0.3;
-  const mouse      = new THREE.Vector2();
-  const tooltip    = document.getElementById('tooltip');
-  const ttPersona  = document.getElementById('tt-persona');
-  const ttId       = document.getElementById('tt-id');
-  let mouseDownPos = {x:0, y:0};
+  const raycaster=new THREE.Raycaster(); raycaster.params.Points.threshold=0.3;
+  const mouse=new THREE.Vector2();
+  const tooltip=document.getElementById('tooltip');
+  let mdPos={x:0,y:0};
 
-  function getMouseNDC(clientX, clientY) {
-    // Use canvas bounding rect for accurate mapping
-    const rect = renderer.domElement.getBoundingClientRect();
-    return {
-      x:  ((clientX - rect.left) / rect.width)  * 2 - 1,
-      y: -((clientY - rect.top)  / rect.height) * 2 + 1,
-    };
-  }
-
-  renderer.domElement.addEventListener('mousemove', (e) => {
-    const ndc = getMouseNDC(e.clientX, e.clientY);
-    mouse.set(ndc.x, ndc.y);
-    if (!pointsMesh) return;
-
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObject(pointsMesh);
-
-    // Clear old highlight
-    if (hoveredIdx >= 0 && highlightAttr) {
-      highlightAttr.array[hoveredIdx] = 0;
-      highlightAttr.needsUpdate = true;
+  renderer.domElement.addEventListener('mousemove',e=>{
+    const rect=renderer.domElement.getBoundingClientRect();
+    mouse.set(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
+    if(!mesh) return;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObject(mesh);
+    if(hovIdx>=0){ hlAttr.array[hovIdx]=0; hlAttr.needsUpdate=true; }
+    if(hits.length&&opObj[hits[0].index]>0.1){
+      hovIdx=hits[0].index;
+      hlAttr.array[hovIdx]=1; hlAttr.needsUpdate=true;
+      const pt=data[hovIdx];
+      document.getElementById('tt-persona').textContent=pt.persona;
+      document.getElementById('tt-persona').style.color=COLORS_HEX[pt.cluster_id];
+      document.getElementById('tt-id').textContent=pt.id;
+      const rect2=renderer.domElement.getBoundingClientRect();
+      tooltip.style.cssText=`display:block;left:${e.clientX-rect2.left+14}px;top:${e.clientY-rect2.top-10}px`;
+      renderer.domElement.style.cursor='pointer';
+    } else {
+      hovIdx=-1; tooltip.style.display='none';
+      renderer.domElement.style.cursor='default';
     }
-
-    if (hits.length > 0) {
-      const idx = hits[0].index;
-      if (opacityObj[idx] > 0.1) {
-        hoveredIdx = idx;
-        // Set highlight
-        highlightAttr.array[idx] = 1;
-        highlightAttr.needsUpdate = true;
-
-        const pt = currentData[idx];
-        ttPersona.textContent = pt.persona;
-        ttPersona.style.color = COLORS_HEX[pt.cluster_id];
-        ttId.textContent = pt.id;
-        const rect = renderer.domElement.getBoundingClientRect();
-        tooltip.style.display = 'block';
-        tooltip.style.left = (e.clientX - rect.left + 14) + 'px';
-        tooltip.style.top  = (e.clientY - rect.top  - 10) + 'px';
-        renderer.domElement.style.cursor = 'pointer';
-        return;
-      }
-    }
-
-    hoveredIdx = -1;
-    tooltip.style.display = 'none';
-    renderer.domElement.style.cursor = 'default';
   });
 
-  renderer.domElement.addEventListener('mousedown', e => { mouseDownPos = {x:e.clientX, y:e.clientY}; });
-
-  renderer.domElement.addEventListener('click', e => {
-    const dx = e.clientX - mouseDownPos.x, dy = e.clientY - mouseDownPos.y;
-    if (Math.sqrt(dx*dx + dy*dy) > 4) return;
-    if (hoveredIdx >= 0 && opacityObj[hoveredIdx] > 0.1) {
-      openDetail(currentData[hoveredIdx]);
-    } else {
-      closeDetail();
-    }
+  renderer.domElement.addEventListener('mousedown',e=>{mdPos={x:e.clientX,y:e.clientY};});
+  renderer.domElement.addEventListener('click',e=>{
+    const dx=e.clientX-mdPos.x,dy=e.clientY-mdPos.y;
+    if(Math.sqrt(dx*dx+dy*dy)>4) return;
+    hovIdx>=0&&opObj[hovIdx]>0.1 ? openDetail(data[hovIdx]) : closeDetail();
   });
 
   // ── Detail panel ──
-  const detailPanel = document.getElementById('detail-panel');
-  const hud         = document.getElementById('camera-hud');
+  const detailPanel=document.getElementById('detail-panel');
+  const hud=document.getElementById('camera-hud');
 
   function openDetail(pt) {
-    const ds = window.DATASETS[window.AppState.activeDataset];
-    document.getElementById('dp-persona').textContent = pt.persona;
-    document.getElementById('dp-persona').style.color  = COLORS_HEX[pt.cluster_id];
-    document.getElementById('dp-cluster-badge').textContent = `Cluster ${pt.cluster_id}`;
-    document.getElementById('dp-method-badge').textContent  = `${ds.dim_reduction} · ${ds.clustering_method}`;
-    document.getElementById('dp-id').textContent      = pt.id;
-    document.getElementById('dp-age').textContent     = pt.features.age_band;
-    document.getElementById('dp-income').textContent  = pt.features.income_tier;
-    document.getElementById('dp-region').textContent  = pt.features.region;
-    const eng = pt.features.engagement_score;
-    document.getElementById('dp-eng-val').textContent = eng.toFixed(2);
-    const bar = document.getElementById('dp-eng-bar');
-    bar.style.width      = (eng * 100) + '%';
-    bar.style.background = COLORS_HEX[pt.cluster_id];
-    document.getElementById('dp-x').textContent = pt.x.toFixed(3);
-    document.getElementById('dp-y').textContent = pt.y.toFixed(3);
-    document.getElementById('dp-z').textContent = pt.z.toFixed(3);
-    document.getElementById('dp-lat').textContent = pt.lat.toFixed(4) + '°';
-    document.getElementById('dp-lon').textContent = pt.lon.toFixed(4) + '°';
-    detailPanel.classList.add('open');
-    hud.classList.add('panel-open');
+    const ds=window.DATASETS[window.AppState.activeDataset];
+    document.getElementById('dp-persona').textContent=pt.persona;
+    document.getElementById('dp-persona').style.color=COLORS_HEX[pt.cluster_id];
+    document.getElementById('dp-cluster-badge').textContent=`Cluster ${pt.cluster_id}`;
+    document.getElementById('dp-method-badge').textContent=`${ds.dim_reduction} · ${ds.clustering_method}`;
+    document.getElementById('dp-id').textContent=pt.id;
+    document.getElementById('dp-age').textContent=pt.age + ' yrs (' + pt.features.age_band + ')';
+    document.getElementById('dp-income').textContent=pt.features.income_tier;
+    document.getElementById('dp-region').textContent=pt.features.region;
+    const eng=pt.features.engagement_score;
+    document.getElementById('dp-eng-val').textContent=eng.toFixed(2);
+    const bar=document.getElementById('dp-eng-bar');
+    bar.style.width=(eng*100)+'%'; bar.style.background=COLORS_HEX[pt.cluster_id];
+    document.getElementById('dp-x').textContent=pt.x.toFixed(3);
+    document.getElementById('dp-y').textContent=pt.y.toFixed(3);
+    document.getElementById('dp-z').textContent=pt.z.toFixed(3);
+    document.getElementById('dp-lat').textContent=pt.lat.toFixed(4)+'°';
+    document.getElementById('dp-lon').textContent=pt.lon.toFixed(4)+'°';
+    detailPanel.classList.add('open'); hud.classList.add('panel-open');
+  }
+  function closeDetail(){ detailPanel.classList.remove('open'); hud.classList.remove('panel-open'); }
+  document.getElementById('dp-close').addEventListener('click',closeDetail);
+
+  // ── Map view ──
+  let leafletMap=null, leafletMarkers=[];
+  const mapContainer=document.getElementById('map-container');
+  const btnMap=document.getElementById('btn-map');
+  let mapOpen=false;
+
+  function initMap() {
+    if(leafletMap) return;
+    leafletMap=L.map('leaflet-map',{zoomControl:true}).setView([38,-96],4);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'&copy; <a href="https://carto.com/">CARTO</a>',maxZoom:19
+    }).addTo(leafletMap);
   }
 
-  function closeDetail() {
-    detailPanel.classList.remove('open');
-    hud.classList.remove('panel-open');
+  function rebuildMapMarkers() {
+    if(!leafletMap) return;
+    leafletMarkers.forEach(m=>m.remove());
+    leafletMarkers=[];
+    const pts=window.DATASETS[window.AppState.activeDataset].points;
+    const mask=window.AppState.visibleMask;
+    pts.forEach((pt,i)=>{
+      const visible=!mask.length||mask[i];
+      const color=COLORS_HEX[pt.cluster_id];
+      const m=L.circleMarker([pt.lat,pt.lon],{
+        radius:5, fillColor:color, color:'#000', weight:0.5,
+        fillOpacity:visible?0.85:0.1, opacity:visible?1:0.1
+      }).addTo(leafletMap);
+      m.bindTooltip(`<b style="color:${color}">${pt.persona}</b><br/>${pt.id}`,{sticky:true});
+      m.on('click',()=>openDetail(pt));
+      leafletMarkers.push(m);
+    });
   }
 
-  document.getElementById('dp-close').addEventListener('click', closeDetail);
+  function updateMapVisibility(mask) {
+    leafletMarkers.forEach((m,i)=>{
+      const v=mask[i];
+      m.setStyle({fillOpacity:v?0.85:0.08,opacity:v?1:0.08});
+    });
+  }
+
+  window._mapUpdateFn  = updateMapVisibility;
+  window._mapRebuildFn = rebuildMapMarkers;
+
+  btnMap.addEventListener('click',()=>{
+    mapOpen=!mapOpen;
+    if(mapOpen){
+      mapContainer.classList.add('visible');
+      btnMap.classList.add('active');
+      btnMap.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>&nbsp;3D View`;
+      initMap();
+      setTimeout(()=>{ leafletMap.invalidateSize(); rebuildMapMarkers(); },50);
+    } else {
+      mapContainer.classList.remove('visible');
+      btnMap.classList.remove('active');
+      btnMap.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>&nbsp;Map View`;
+    }
+  });
 
   // ── Camera HUD ──
-  document.getElementById('btn-reset').addEventListener('click', () => {
-    gsap.to(camera.position, { x: DEFAULT_CAM.x, y: DEFAULT_CAM.y, z: DEFAULT_CAM.z,
-      duration: 1.0, ease: 'power3.inOut', onUpdate: () => controls.update() });
-    gsap.to(controls.target, { x:0, y:0, z:0, duration: 1.0, ease: 'power3.inOut',
-      onUpdate: () => controls.update() });
+  document.getElementById('btn-reset').addEventListener('click',()=>{
+    gsap.to(camera.position,{...DEF_CAM,duration:1,ease:'power3.inOut',onUpdate:()=>controls.update()});
+    gsap.to(controls.target,{x:0,y:0,z:0,duration:1,ease:'power3.inOut',onUpdate:()=>controls.update()});
   });
-
-  document.getElementById('btn-zi').addEventListener('click', () => {
-    const d = new THREE.Vector3(); camera.getWorldDirection(d);
-    gsap.to(camera.position, { x: camera.position.x + d.x*2, y: camera.position.y + d.y*2,
-      z: camera.position.z + d.z*2, duration: 0.4, ease: 'power2.out',
-      onUpdate: () => controls.update() });
+  document.getElementById('btn-zi').addEventListener('click',()=>{
+    const d=new THREE.Vector3(); camera.getWorldDirection(d);
+    gsap.to(camera.position,{x:camera.position.x+d.x*2,y:camera.position.y+d.y*2,
+      z:camera.position.z+d.z*2,duration:0.4,ease:'power2.out',onUpdate:()=>controls.update()});
   });
-
-  document.getElementById('btn-zo').addEventListener('click', () => {
-    const d = new THREE.Vector3(); camera.getWorldDirection(d);
-    gsap.to(camera.position, { x: camera.position.x - d.x*2, y: camera.position.y - d.y*2,
-      z: camera.position.z - d.z*2, duration: 0.4, ease: 'power2.out',
-      onUpdate: () => controls.update() });
+  document.getElementById('btn-zo').addEventListener('click',()=>{
+    const d=new THREE.Vector3(); camera.getWorldDirection(d);
+    gsap.to(camera.position,{x:camera.position.x-d.x*2,y:camera.position.y-d.y*2,
+      z:camera.position.z-d.z*2,duration:0.4,ease:'power2.out',onUpdate:()=>controls.update()});
   });
 
   // ── Render loop ──
-  function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene, camera);
-  }
+  (function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); })();
 
   // ── Boot ──
   buildScene(window.DATASETS[0].points);
   document.getElementById('loading').classList.add('hidden');
-  setTimeout(() => document.getElementById('loading').remove(), 500);
-  animate();
+  setTimeout(()=>document.getElementById('loading').remove(),500);
 </script>
 
 </body>
