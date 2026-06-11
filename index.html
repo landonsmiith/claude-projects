@@ -774,7 +774,9 @@ function OrbitControls(camera, el) {
   }
   resize(); window.addEventListener('resize', resize);
 
-  scene.add(Object.assign(new THREE.GridHelper(12,24,0x222228,0x1e1e24),{position:new THREE.Vector3(0,-5.5,0)}));
+  const grid = new THREE.GridHelper(12,24,0x222228,0x1e1e24);
+  grid.position.set(0,-5.5,0);
+  scene.add(grid);
 
   // Shader — per-point opacity lerped in JS, highlight flag
   const mat = new THREE.ShaderMaterial({
